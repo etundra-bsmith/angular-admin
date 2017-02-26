@@ -1,11 +1,11 @@
 {
-  "appname": "Angular Admin",
+  "appname": "Cafe Rio Admin",
   "scope": "ProductAdmin ProductAssignmentAdmin InventoryAdmin BuyerAdmin CatalogAdmin CategoryAdmin AddressAdmin CostCenterAdmin PromotionAdmin CreditCardAdmin MessageConfigAssignmentAdmin PriceScheduleAdmin OrderReader OrderAdmin SpendingAccountAdmin BuyerUserAdmin UserGroupAdmin ApprovalRuleAdmin PermissionAdmin AdminUserAdmin AdminUserGroupAdmin MeAdmin MeXpAdmin UnsubmittedOrderReader",
-  "clientid": "D89E2196-CC75-4312-A4A9-67E4CC4BEDFB",
-  "buyerid": "A",
-  "catalogid": "SHARED",
+  "clientid": "70836978-8494-4C33-9296-6BAB2E6CB1F0",
+  "buyerid": "caferio",
+  "catalogid": "caferio",
   "environment": "prod",
   "defaultstate": "home",
   "html5mode": false,
-  "bootswatchtheme": null
+  "bootswatchtheme": "lumen"
 }
