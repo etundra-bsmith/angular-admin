@@ -6,7 +6,7 @@ function OrdersConfig($stateProvider) {
     $stateProvider
         .state('orders', {
             parent: 'base',
-            url: '/orders?FromUserGroupID&buyerID&fromDate&toDate&search&page&pageSize&searchOn&sortBy',
+            url: '/orders?FromUserGroupID&FromCompanyID&status&fromDate&toDate&search&page&pageSize&searchOn&sortBy',
             templateUrl: 'orderManagement/orders/templates/orders.html',
             controller: 'OrdersCtrl',
             controllerAs: 'orders',

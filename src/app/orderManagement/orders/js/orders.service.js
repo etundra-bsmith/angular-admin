@@ -27,6 +27,14 @@ function OrderCloudOrdersService($q, $filter, OrderCloud) {
             parameters.filters['xp.CustomerNumber'] = parameters.FromUserGroupID;
         }
 
+        if (parameters.filters && parameters.FromCompanyID) {
+            parameters.filters.FromCompanyID = parameters.FromCompanyID;
+        }
+
+        if (parameters.filters && parameters.status) {
+            parameters.filters.status = parameters.status;
+        }
+
         var filters = angular.extend({status: '!Unsubmitted'}, parameters.filters);
 
         return OrderCloud.Orders.ListIncoming(null, null, parameters.search, parameters.page, parameters.pageSize, parameters.searchOn, parameters.sortBy, filters, parameters.buyerID)

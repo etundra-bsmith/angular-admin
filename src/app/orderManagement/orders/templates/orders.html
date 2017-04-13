@@ -25,7 +25,7 @@
         <div class="row">
             <div class="col-sm-4 form-group">
                 <label for="Status">Status</label>
-                <select id="Status" class="form-control" ng-model="orders.parameters.filters.status" ng-options="status.Value as status.Name for status in orders.orderStatuses" ng-change="orders.filter(true)">
+                <select id="Status" class="form-control" ng-model="orders.parameters.status" ng-options="status.Value as status.Name for status in orders.orderStatuses" ng-change="orders.filter(true)">
                     <option value="">All</option>
                 </select>
             </div>
@@ -43,7 +43,7 @@
         <div class="row">
             <div class="col-sm-6 form-group">
                 <label for="BuyerCompany">Buyer Company</label>
-                <ui-select id="BuyerCompany" ng-model="orders.parameters.filters.FromCompanyID" close-on-select="true" ng-change="orders.filter(true)">
+                <ui-select id="BuyerCompany" ng-model="orders.parameters.FromCompanyID" close-on-select="true" ng-change="orders.filter(true)">
                     <ui-select-match placeholder="Search buyer companies...">
                         <span ng-bind-html="$select.selected.Name"></span>
                     </ui-select-match>
