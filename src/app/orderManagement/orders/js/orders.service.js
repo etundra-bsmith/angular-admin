@@ -8,7 +8,6 @@ function OrderCloudOrdersService($q, $filter, OrderCloud) {
     };
     
     function _list(parameters) {
-        var deferred = $q.defer();
 
         function convertToDate(toDate) {
             var result = new Date(toDate);
@@ -24,25 +23,42 @@ function OrderCloudOrdersService($q, $filter, OrderCloud) {
             parameters.filters.DateSubmitted = [('<' + convertToDate(parameters.toDate))];
         }
 
-        var showSubmittedOnly = angular.extend({status: '!Unsubmitted'}, parameters.filters);
+        if (parameters.filters && parameters.FromUserGroupID) {
+            parameters.filters['xp.CustomerNumber'] = parameters.FromUserGroupID;
+        }
 
-        OrderCloud.Orders.ListIncoming(null, null, parameters.search, parameters.page, parameters.pageSize, parameters.searchOn, parameters.sortBy, showSubmittedOnly, parameters.buyerID)
+        var filters = angular.extend({status: '!Unsubmitted'}, parameters.filters);
+
+        return OrderCloud.Orders.ListIncoming(null, null, parameters.search, parameters.page, parameters.pageSize, parameters.searchOn, parameters.sortBy, filters, parameters.buyerID)
             .then(function(data) {
-                gatherBuyerCompanies(data);
+                return gatherBuyerCompanies(data)
             });
 
-        function gatherBuyerCompanies(data) {
-            var buyerIDs = _.uniq(_.pluck(data.Items, 'FromCompanyID'));
-            OrderCloud.Buyers.List(null, 1, 100, null, null, {ID: buyerIDs.join('|')})
+        function gatherBuyerCompanies(orders) {
+            var buyerIDs = _.uniq(_.pluck(orders.Items, 'FromCompanyID'));
+            return OrderCloud.Buyers.List(null, 1, 100, null, null, {ID: buyerIDs.join('|')})
                 .then(function(buyerData) {
-                    _.map(data.Items, function(order) {
+                    var queue = [];
+                    _.each(orders.Items, function(order) {
                         order.FromCompany = _.findWhere(buyerData.Items, {ID: order.FromCompanyID});
+                        queue.push(getUserGroups(order))
                     });
-                    deferred.resolve(data);
+                    return $q.all(queue)
+                        .then(function(results){
+                            orders.Items = [].concat.apply([], results);
+                            return orders;
+                        })
                 });
+
+            function getUserGroups(order) {
+                return OrderCloud.UserGroups.Get(order.xp.CustomerNumber, order.FromCompanyID)
+                    .then(function(userGroup) {
+                        order.FromUserGroup = userGroup;
+                        order.FromUserGroupID = userGroup.ID;
+                        return order;
+                    });
+            }
         }
-        
-        return deferred.promise;
     }
     
     return service;
