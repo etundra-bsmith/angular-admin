@@ -2,14 +2,15 @@ angular.module('orderCloud')
     .controller('OrdersCtrl', OrdersController)
 ;
 
-function OrdersController($state, $ocMedia, OrderCloud, ocParameters, ocOrdersService, Parameters, OrderList, BuyerCompanies) {
+function OrdersController($state, $ocMedia, OrderCloud, ocParameters, ocOrdersService, Parameters, OrderList, BuyerCompanies, UserGroupsList) {
     var vm = this;
     if (Parameters.fromDate) Parameters.fromDate = new Date(Parameters.fromDate);
     if (Parameters.toDate) Parameters.toDate = new Date(Parameters.toDate);
     delete Parameters.filters.DateSubmitted;
     vm.parameters = Parameters;
-    vm.list = OrderList;
+    vm.list = OrderList || [];
     vm.buyerCompanies = BuyerCompanies;
+    vm.userGroups = UserGroupsList;
     vm.sortSelection = Parameters.sortBy ? (Parameters.sortBy.indexOf('!') == 0 ? Parameters.sortBy.split('!')[1] : Parameters.sortBy) : null;
 
     vm.orderStatuses = [
@@ -50,6 +51,11 @@ function OrdersController($state, $ocMedia, OrderCloud, ocParameters, ocOrdersSe
     //Clear relevant filters, reload the state & reset the page
     vm.clearFilters = function() {
         vm.parameters.filters = null;
+        vm.parameters.FromUserGroupID = null;
+        vm.parameters.FromCompanyID = null;
+        vm.parameters.status = null;
+        vm.parameters.fromDate = null;
+        vm.parameters.toDate = null;
         $ocMedia('max-width:767px') ? vm.parameters.sortBy = null : angular.noop(); //Clear out sort by on mobile devices
         vm.filter(true);
     };
@@ -96,6 +102,13 @@ function OrdersController($state, $ocMedia, OrderCloud, ocParameters, ocOrdersSe
         return OrderCloud.Buyers.List(search, 1, 100)
             .then(function(data){
                 vm.buyerCompanies = data;
+            });
+    };
+
+    vm.searchUserGroups = function(search) {
+        return OrderCloud.UserGroups.List(search, 1, 100)
+            .then(function(data){
+                vm.userGroups = data;
             });
     };
 }
