@@ -41,7 +41,7 @@
             </div>
         </div>
         <div class="row">
-            <div class="col-sm-6 form-group">
+            <div class="col-sm-5 form-group">
                 <label for="BuyerCompany">Buyer Company</label>
                 <ui-select id="BuyerCompany" ng-model="orders.parameters.FromCompanyID" close-on-select="true" ng-change="orders.filter(true)">
                     <ui-select-match placeholder="Search buyer companies...">
@@ -52,17 +52,20 @@
                     </ui-select-choices>
                 </ui-select>
             </div>
-            <div class="col-sm-6 form-group">
-            <label for="BuyerCompany">User Group</label>
-            <ui-select id="UserGroup" ng-model="orders.parameters.FromUserGroupID" close-on-select="true" ng-change="orders.filter(true)">
-                <ui-select-match placeholder="Search user groups...">
-                    <span ng-bind-html="$select.selected.Name"></span>
-                </ui-select-match>
-                <ui-select-choices repeat="group.ID as group in (orders.userGroups | filter: $select.search) track by $index" refresh="orders.searchUserGroups($select.search)" refresh-delay="300">
-                    <span ng-bind-html="group.Name"></span>
-                </ui-select-choices>
-            </ui-select>
-        </div>
+            <div class="col-sm-5 form-group">
+                <label for="BuyerCompany">User Group</label>
+                <ui-select id="UserGroup" ng-model="orders.parameters.FromUserGroupID" close-on-select="true" ng-change="orders.filter(true)">
+                    <ui-select-match placeholder="Search user groups...">
+                        <span ng-bind-html="$select.selected.Name"></span>
+                    </ui-select-match>
+                    <ui-select-choices repeat="group.ID as group in (orders.userGroups | filter: $select.search) track by $index" refresh="orders.searchUserGroups($select.search)" refresh-delay="300">
+                        <span ng-bind-html="group.Name"></span>
+                    </ui-select-choices>
+                </ui-select>
+            </div>
+            <div class="col-sm-2">
+                <button class="btn btn-default" ng-click="orders.clearFilters()">Clear Filters</button>
+            </div>
         </div>
     </form>
 
@@ -109,11 +112,8 @@
                                 <i class="fa fa-caret-down" ng-show="orders.parameters.sortBy == 'FromCompanyID'"></i>
                                 <i class="fa fa-caret-up" ng-show="orders.parameters.sortBy == '!FromCompanyID'"></i>
                             </th>
-                            <!--<th ng-click="orders.updateSort('FromCompanyID')">-->
                             <th>
                                 User Group
-                                <!--<i class="fa fa-caret-down" ng-show="orders.parameters.sortBy == 'FromCompanyID'"></i>-->
-                                <!--<i class="fa fa-caret-up" ng-show="orders.parameters.sortBy == '!FromCompanyID'"></i>-->
                             </th>
                             <th ng-click="orders.updateSort('FromUserFirstName')">
                                 Submitted By

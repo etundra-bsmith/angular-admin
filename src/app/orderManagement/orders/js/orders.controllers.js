@@ -51,6 +51,11 @@ function OrdersController($state, $ocMedia, OrderCloud, ocParameters, ocOrdersSe
     //Clear relevant filters, reload the state & reset the page
     vm.clearFilters = function() {
         vm.parameters.filters = null;
+        vm.parameters.FromUserGroupID = null;
+        vm.parameters.FromCompanyID = null;
+        vm.parameters.status = null;
+        vm.parameters.fromDate = null;
+        vm.parameters.toDate = null;
         $ocMedia('max-width:767px') ? vm.parameters.sortBy = null : angular.noop(); //Clear out sort by on mobile devices
         vm.filter(true);
     };
