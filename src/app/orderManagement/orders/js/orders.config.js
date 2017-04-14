@@ -18,14 +18,7 @@ function OrdersConfig($stateProvider) {
                     return ocParameters.Get($stateParams);
                 },
                 OrderList: function(ocOrdersService, OrderCloud, Parameters) {
-                    return ocOrdersService.List(Parameters)
-                        .then(function(orders) {
-                            if(orders.Items.length) {
-                                return orders;
-                            } else {
-                                return null;
-                            }
-                        });
+                    return ocOrdersService.List(Parameters);
                 },
                 BuyerCompanies: function(OrderCloud) {
                     return OrderCloud.Buyers.List(null, 1, 100);
@@ -34,12 +27,10 @@ function OrdersConfig($stateProvider) {
                     var queue = [];
                     _.each(BuyerCompanies.Items, function(buyer) {
                         queue.push(function(){
-                            var defer = $q.defer();
-                            OrderCloud.UserGroups.List(null, null, 100, null, null, null, buyer.ID)
+                            return OrderCloud.UserGroups.List(null, null, 100, null, null, null, buyer.ID)
                                 .then(function(data) {
-                                    return defer.resolve(data.Items);
-                                })
-                            return defer.promise;
+                                    return data.Items;
+                                });
                         }());
                     });
                     return $q.all(queue)
