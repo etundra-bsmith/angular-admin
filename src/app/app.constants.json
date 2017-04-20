@@ -1,6 +1,6 @@
 {
   "appname": "Cafe Rio Admin",
-  "scope": "ProductAdmin ProductAssignmentAdmin InventoryAdmin BuyerAdmin CatalogAdmin CategoryAdmin AddressAdmin CostCenterAdmin PromotionAdmin CreditCardAdmin MessageConfigAssignmentAdmin PriceScheduleAdmin OrderReader OrderAdmin SpendingAccountAdmin BuyerUserAdmin UserGroupAdmin ApprovalRuleAdmin PermissionAdmin AdminUserAdmin AdminUserGroupAdmin MeAdmin MeXpAdmin UnsubmittedOrderReader",
+  "scope": "FullAccess",
   "clientid": "70836978-8494-4C33-9296-6BAB2E6CB1F0",
   "buyerid": "caferio",
   "catalogid": "caferio",
