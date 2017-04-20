@@ -75,8 +75,8 @@
                     </ui-select>
                 </div>
             </div>
+        </div>
     </form>
-    </div>
     <div class="row">
         <div class="col-sm-2">
             <button class="btn btn-default btn-sm" ng-click="orders.clearFilters()"><i class="fa fa-times" aria-hidden="true"></i> Clear Filters</button>
@@ -148,7 +148,7 @@
                             <td>{{(order.DateSubmitted || order.DateCreated) | date:'short'}}</td>
                             <td>{{order.FromCompany.Name}}</td>
                             <td>{{order.FromUserGroup.Name}}</td>
-                            <td>{{order.FromUserFirstName + ' ' + order.FromUserLastName}}</td>
+                            <td>{{order.FromUser.FirstName + ' ' + order.FromUser.LastName}}</td>
                             <td>{{order.Subtotal | currency}}</td>
                         </tr>
                     </tbody>

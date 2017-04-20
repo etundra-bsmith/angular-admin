@@ -2,7 +2,8 @@ angular.module('orderCloud')
     .controller('OrdersCtrl', OrdersController)
 ;
 
-function OrdersController($state, $ocMedia, OrderCloud, ocParameters, ocOrdersService, Parameters, OrderList, BuyerCompanies, UserGroupsList) {
+
+function OrdersController($state, $ocMedia, OrderCloudSDK, ocParameters, ocOrdersService, Parameters, OrderList, BuyerCompanies, UserGroupsList) {
     var vm = this;
     if (Parameters.fromDate) Parameters.fromDate = new Date(Parameters.fromDate);
     if (Parameters.toDate) Parameters.toDate = new Date(Parameters.toDate);
@@ -99,14 +100,24 @@ function OrdersController($state, $ocMedia, OrderCloud, ocParameters, ocOrdersSe
     };
 
     vm.searchBuyerCompanies = function(search) {
-        return OrderCloud.Buyers.List(search, 1, 100)
+        var options = {
+            search: search,
+            page: 1,
+            pageSize: 100
+        };
+        return OrderCloudSDK.Buyers.List(options)
             .then(function(data){
                 vm.buyerCompanies = data;
             });
     };
 
     vm.searchUserGroups = function(search) {
-        return OrderCloud.UserGroups.List(search, 1, 100)
+        var parameters = {
+            search: search,
+            page: 1,
+            pageSize: 100
+        };
+        return OrderCloudSDK.UserGroups.List(parameters)
             .then(function(data){
                 vm.userGroups = data;
             });
