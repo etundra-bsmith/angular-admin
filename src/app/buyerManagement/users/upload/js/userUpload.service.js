@@ -101,9 +101,10 @@ function UserUploadService($q, OrderCloudSDK, UploadService, toastr) {
                                         deferred.notify(progress);
                                     })
                                     .catch(function(ex){
-                                        results.FailedUserGroups.push({UserGroupID: userGroupBody.ID, Error: {ErrorCode: ex.data.Errors[0].ErrorCode, Message: ex.data.Errors[0].Message}});
                                         progress[progress.length - 1].ErrorCount++;
                                         deferred.notify(progress);
+                                        toastr.error(userGroupBody.ID + ex.response.body.Errors[0].Message, 'Error');
+                                        results.FailedUserGroups.push({UserGroupID: userGroupBody.ID, Error: {ErrorCode: ex.data.Errors[0].ErrorCode, Message: ex.data.Errors[0].Message}});
                                     })
                             } else {
                                 results.FailedUserGroups.push({UserGroupID: userGroupBody.ID, Error: {ErrorCode: ex.data.Errors[0].ErrorCode, Message: ex.data.Errors[0].Message}});
@@ -144,6 +145,7 @@ function UserUploadService($q, OrderCloudSDK, UploadService, toastr) {
                                 .catch(function(ex) {
                                     progress[progress.length - 1].ErrorCount++;
                                     deferred.notify(progress);
+                                    toastr.error(ex.response.body.Errors[0].Message, 'Error');
                                     results.FailedUserAssignments.push({UserID: assignment.UserID, UserGroupID: assignment.UserGroupID, Error: {Code: ex.data.Errors[0].ErrorCode, Message: ex.data.Errors[0].Message}});
                                 });
                             }());
@@ -184,9 +186,10 @@ function UserUploadService($q, OrderCloudSDK, UploadService, toastr) {
                             deferred.notify(progress);
                         })
                         .catch(function(ex) {
-                            results.FailedAddresses.push({AddressID: addressBody.ID, Error: {ErrorCode: ex.data.Errors[0].ErrorCode, Message: ex.data.Errors[0].Message}})
                             progress[progress.length - 1].ErrorCount++;
                             deferred.notify(progress);
+                            toastr.error(ex.response.body.Errors[0].Message, 'Error');
+                            results.FailedAddresses.push({AddressID: addressBody.ID, Error: {ErrorCode: ex.data.Errors[0].ErrorCode, Message: ex.data.Errors[0].Message}});
                         });
                 }());
             });
@@ -233,6 +236,7 @@ function UserUploadService($q, OrderCloudSDK, UploadService, toastr) {
                         .catch(function(ex) {
                             progress[progress.length - 1].ErrorCount++;
                             deferred.notify(progress);
+                            toastr.error(ex.response.body.Errors[0].Message, 'Error');
                             results.FailedCategoryAssignments.push({AddressID: assignment.AddressID, UserGroupID: assignment.GroupID, Error: {Code: ex.data.Errors[0].ErrorCode, Message: ex.data.Errors[0].Message}});
                         });
                 })());
