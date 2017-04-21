@@ -2,7 +2,7 @@ angular.module('orderCloud')
     .factory('ProductUploadService', ProductUploadService)
 ;
 
-function ProductUploadService($q, $timeout, OrderCloud, catalogid, UploadService) {
+function ProductUploadService($q, ocUtility, OrderCloudSDK, catalogid, UploadService, toastr) {
     var service = {
         Upload: _upload,
         ValidateProducts: _validateProducts,
@@ -24,35 +24,41 @@ function ProductUploadService($q, $timeout, OrderCloud, catalogid, UploadService
         };
         var productCount = products.length;
         var categoryCount = categories.length;
-        var progress = [{Message: 'Clean Price Schedules', Total: productCount, SuccessCount: 0, ErrorCount: 0}];
+        var progress = [];
 
-        $timeout(function() {
-            deleteProductPriceSchedules();
-        }, 1000);
+        createPriceSchedules();
 
-        function deleteProductPriceSchedules() {
+        function createPriceSchedules() {
+            progress.push({Message: 'Upload Price Schedules', Total: productCount, SuccessCount: 0, ErrorCount: 0});
             deferred.notify(progress);
-            var deletePSQueue = [];
-            angular.forEach(products, function(product) {
-                deletePSQueue.push((function() {
-                    var d = $q.defer();
-
-                    OrderCloud.PriceSchedules.Delete(product.ID)
+            var priceScheduleQueue = [];
+            _.each(products, function(product) {
+                var ps = {
+                    ID: product.ID,
+                    Name: product.ID + ' - ' + product.Price,
+                    ApplyTax: false,
+                    ApplyShipping: false,
+                    RestrictedQuantity: false,
+                    UseCumulativeQuantity: false,
+                    PriceBreaks: [{Quantity: 1, Price: product.Price}],
+                    xp: {}
+                };
+                priceScheduleQueue.push((function() {
+                    return OrderCloudSDK.PriceSchedules.Update(ps.ID, ps)
                         .then(function() {
                             progress[progress.length - 1].SuccessCount++;
                             deferred.notify(progress);
-                            d.resolve();
                         })
-                        .catch(function() {
-                            progress[progress.length - 1].SuccessCount++;
+                        .catch(function(ex) {
+                            var e = ex.response.body.Errors[0];
+                            results.FailedPriceSchedules.push({PriceScheduleID: ps.ID, Error: e.Message});
+                            progress[progress.length - 1].ErrorCount++;
                             deferred.notify(progress);
-                            d.resolve();
                         });
-                    return d.promise;
                 })());
             });
 
-            $q.all(deletePSQueue).then(function() {
+            $q.all(priceScheduleQueue).then(function() {
                 createProducts();
             });
         }
@@ -61,10 +67,11 @@ function ProductUploadService($q, $timeout, OrderCloud, catalogid, UploadService
             progress.push({Message: 'Upload Products', Total: productCount, SuccessCount: 0, ErrorCount: 0});
             deferred.notify(progress);
             var productQueue = [];
-            angular.forEach(products, function(product) {
+            _.each(products, function(product) {
                 var p = {
                     ID: product.ID,
                     Name: product.Name,
+                    DefaultPriceScheduleID: product.ID,
                     Description: product.Description,
                     QuantityMultiplier: product.QuantityMultiplier || 1,
                     Active: 'true',
@@ -78,118 +85,45 @@ function ProductUploadService($q, $timeout, OrderCloud, catalogid, UploadService
                         attributes: product.xp.attributes
                     }
                 };
-                productQueue.push((function() {
-                    var d = $q.defer();
-
-                    OrderCloud.Products.Update(p.ID, p)
+                productQueue.push(function() {
+                    return OrderCloudSDK.Products.Update(p.ID, p)
                         .then(function() {
                             progress[progress.length - 1].SuccessCount++;
-                            deferred.notify(progress);
                             successfulProducts.push(product);
-                            d.resolve();
+                            deferred.notify(progress);
                         })
                         .catch(function(ex) {
-                            results.FailedProducts.push({ProductID: p.ID, Error: {ErrorCode: ex.data.Errors[0].ErrorCode, Message: ex.data.Errors[0].Message}});
+                            var e = ex.response.body.Errors[0];
+                            results.FailedProducts.push({ProductID: p.ID, Error: e.Message});
                             progress[progress.length - 1].ErrorCount++;
                             deferred.notify(progress);
-                            d.resolve();
                         });
-
-                    return d.promise;
-                })());
+                }());
             });
-
             $q.all(productQueue).then(function() {
                 products = successfulProducts;
                 productCount = products.length;
-                createPriceSchedules();
+                gatherBuyers()
             });
         }
 
-        function createPriceSchedules() {
-            progress.push({Message: 'Upload Price Schedules', Total: productCount, SuccessCount: 0, ErrorCount: 0});
-            deferred.notify(progress);
-            var priceScheduleQueue = [];
-            angular.forEach(products, function(product) {
-                var ps = {
-                    ID: product.ID,
-                    Name: product.ID + ' - ' + product.Price,
-                    ApplyTax: false,
-                    ApplyShipping: false,
-                    RestrictedQuantity: false,
-                    UseCumulativeQuantity: false,
-                    PriceBreaks: [{Quantity: 1, Price: product.Price}],
-                    xp: {}
-                };
-                priceScheduleQueue.push((function() {
-                    var d = $q.defer();
 
-                    OrderCloud.PriceSchedules.Update(ps.ID, ps)
-                        .then(function() {
-                            progress[progress.length - 1].SuccessCount++;
-                            deferred.notify(progress);
-                            d.resolve();
-                        })
-                        .catch(function(ex) {
-                            results.FailedPriceSchedules.push({PriceScheduleID: ps.ID, Error: {ErrorCode: ex.data.Errors[0].ErrorCode, Message: ex.data.Errors[0].Message}});
-                            progress[progress.length - 1].ErrorCount++;
-                            deferred.notify(progress);
-                            d.resolve();
-                        });
-
-                    return d.promise;
-                })());
-            });
-
-            $q.all(priceScheduleQueue).then(function() {
-                gatherBuyers();
-            });
-        }
 
         function gatherBuyers() {
             progress.push({Message: 'Fetch Buyers', Total: 1, SuccessCount: 0, ErrorCount: 0});
             deferred.notify(progress);
             var buyerIDs = [];
-            OrderCloud.Buyers.List(null, 1, 100)
+            var parameters = {
+                page: 'page',
+                pageSize: 100
+            };
+            return ocUtility.ListAll(OrderCloudSDK.Buyers.List, parameters)
                 .then(function(buyerData) {
                     progress[progress.length - 1].Total = buyerData.Meta.TotalPages;
                     progress[progress.length - 1].SuccessCount++;
                     deferred.notify(progress);
                     buyerIDs = buyerIDs.concat(_.pluck(buyerData.Items, 'ID'));
-                    if (buyerData.Meta.TotalPages > buyerData.Meta.Page) {
-                        var buyerQueue = [];
-                        var page = buyerData.Meta.Page;
-                        while (page < buyerData.Meta.TotalPages) {
-                            page++;
-                            buyerQueue.push((function() {
-                                var d = $q.defer();
-
-                                OrderCloud.Buyers.List(null, page, 100)
-                                    .then(function() {
-                                        progress[progress.length - 1].SuccessCount++;
-                                        deferred.notify(progress);
-                                        d.resolve();
-
-                                    })
-                                    .catch(function(ex) {
-                                        progress[progress.length - 1].ErrorCount++;
-                                        deferred.notify(progress);
-                                        d.resolve();
-                                    });
-
-                                return d.promise;
-                            })());
-                        }
-                        $q.all(buyerQueue).then(function(buyerResults) {
-                            angular.forEach(buyerResults, function(result) {
-                                buyerIDs = buyerIDs.concat(_.pluck(result.Items, 'ID'));
-                            });
-                            assignProductsToBuyers(buyerIDs);
-                        });
-                    }
-                    else {
-                        assignProductsToBuyers(buyerIDs);
-                    }
+                    assignProductsToBuyers(buyerIDs);
                 });
         }
 
@@ -204,24 +138,19 @@ function ProductUploadService($q, $timeout, OrderCloud, catalogid, UploadService
                         ProductID: product.ID,
                         PriceScheduleID: product.ID
                     };
-                    buyerAssignmentQueue.push((function() {
-                        var d = $q.defer();
-
-                        OrderCloud.Products.SaveAssignment(assignment)
+                    buyerAssignmentQueue.push(function() {
+                        return OrderCloudSDK.Products.SaveAssignment(assignment)
                             .then(function() {
                                 progress[progress.length - 1].SuccessCount++;
                                 deferred.notify(progress);
-                                d.resolve();
                             })
                             .catch(function(ex) {
                                 progress[progress.length - 1].ErrorCount++;
                                 deferred.notify(progress);
+                                toastr.error(buyerID + ': ' + ex.response.body.Errors[0].Message, 'Error');
                                 results.FailedProductBuyerAssignments.push({BuyerID: buyerID, ProductID: product.ID, Error: {Code: ex.data.Errors[0].ErrorCode, Message: ex.data.Errors[0].Message}});
-                                d.resolve();
                             });
-
-                        return d.promise;
-                    })());
+                    }());
                 });
             });
             $q.all(buyerAssignmentQueue).then(function() {
@@ -234,29 +163,24 @@ function ProductUploadService($q, $timeout, OrderCloud, catalogid, UploadService
             deferred.notify(progress);
             var categoryQueue = [];
 
-            angular.forEach(categories, function(category) {
+            _.each(categories, function(category) {
                 var cat = {
                     ID: category.ID,
                     Name: category.Name,
                     Active: 'true'
                 };
                 categoryQueue.push((function() {
-                    var d = $q.defer();
-
-                    OrderCloud.Categories.Update(cat.ID, cat, catalogid)
+                    return OrderCloudSDK.Categories.Update(catalogid, cat.ID, cat)
                         .then(function() {
                             progress[progress.length - 1].SuccessCount++;
                             deferred.notify(progress);
                             successfulCats.push(category);
-                            d.resolve();
                         })
                         .catch(function(ex) {
                             results.FailedCategories.push({CategoryID: cat.ID, Error: {ErrorCode: ex.data.Errors[0].ErrorCode, Message: ex.data.Errors[0].Message}});
                             progress[progress.length - 1].ErrorCount++;
                             deferred.notify(progress);
-                            d.resolve();
                         });
-                    return d.promise;
                 })());
             });
 
@@ -269,22 +193,16 @@ function ProductUploadService($q, $timeout, OrderCloud, catalogid, UploadService
 
         function setParentID() {
             var categoryQueue = [];
-            angular.forEach(categories, function(category) {
-                categoryQueue.push((function() {
-                    var d = $q.defer();
-
-                    OrderCloud.Categories.Patch(category.ID, {ParentID: category.ParentID}, catalogid)
+            _.each(categories, function(category) {
+                categoryQueue.push(function() {
+                    return OrderCloudSDK.Categories.Patch(catalogid, category.ID, {ParentID: category.ParentID})
                         .then(function() {
                             deferred.notify(progress);
-                            d.resolve();
                         })
                         .catch(function(ex) {
                             deferred.notify(progress);
-                            d.resolve();
                         });
-
-                    return d.promise;
-                })());
+                }());
             });
 
             $q.all(categoryQueue).then(function() {
@@ -296,32 +214,16 @@ function ProductUploadService($q, $timeout, OrderCloud, catalogid, UploadService
             var categoryAssignments = [];
 
             _.each(products, function(product) {
-                var directCategory = _.findWhere(allCategories, {ID: product.CategoryID});
-
-                function checkParent(cat) {
-                    var parentCat = _.findWhere(allCategories, {ID: cat.ParentID});
-                    if (parentCat) {
-                        var parentAssignment = {
-                            CategoryID: parentCat.ID,
-                            ProductID: product.ID
-                        };
-                        categoryAssignments.push(parentAssignment);
-                        if (parentCat.ParentID) checkParent(parentCat);
-                    }
-                    else {
-                        results.SkippedCategoryAssignments.push({CategoryID: cat.ID, ProductID: product.ID, Error: {Message: 'Category does not exist: ' + cat.ID}});
-                    }
-                }
-                if (directCategory) {
+                var category = _.findWhere(allCategories, {ID: product.CategoryID});
+                if (category) {
                     var assignment = {
-                        CategoryID: directCategory.ID,
+                        CategoryID: category.ID,
                         ProductID: product.ID
                     };
                     categoryAssignments.push(assignment);
-                    if (directCategory.ParentID) checkParent(directCategory);
                 }
                 else {
-                    results.SkippedCategoryAssignments.push({CategoryID: product.CategoryID, ProductID: product.ID, Error: {Message: 'Category does not exist: ' + product.CategoryID}});
+                    results.SkippedCategoryAssignments.push({CategoryID: product.CategoryID, ProductID: product.ID, Message: 'Category does not exist: ' + product.CategoryID});
                 }
             });
             assignProductsToCategories(categoryAssignments);
@@ -331,23 +233,19 @@ function ProductUploadService($q, $timeout, OrderCloud, catalogid, UploadService
             progress.push({Message: 'Assign Products to Categories', Total: categoryAssignments.length, SuccessCount: 0, ErrorCount: 0});
             deferred.notify(progress);
             var categoryAssignmentQueue = [];
-            _.each(categoryAssignments, function(catAss) {
-                categoryAssignmentQueue.push( (function() {
-                    var d = $q.defer();
-                    OrderCloud.Categories.SaveProductAssignment(catAss, catalogid)
+            _.each(categoryAssignments, function(categoryAssignment) {
+                categoryAssignmentQueue.push(function() {
+                    return OrderCloudSDK.Categories.SaveProductAssignment(catalogid, categoryAssignment)
                         .then(function() {
                             progress[progress.length - 1].SuccessCount++;
                             deferred.notify(progress);
-                            d.resolve();
                         })
                         .catch(function(ex) {
                             progress[progress.length - 1].ErrorCount++;
                             deferred.notify(progress);
-                            results.FailedCategoryAssignments.push({CategoryID: catAss.CategoryID, ProductID: product.ID, Error: {Code: ex.data.Errors[0].ErrorCode, Message: ex.data.Errors[0].Message}});
-                            d.resolve();
+                            results.FailedCategoryAssignments.push({CategoryID: categoryAssignment.CategoryID, ProductID: product.ID, Error: {Code: ex.data.Errors[0].ErrorCode, Message: ex.data.Errors[0].Message}});
                         });
-                    return d.promise;
-                }) ());
+                }());
             });
             $q.all(categoryAssignmentQueue).then(function() {
                 progress.push({Message: 'Done'});
@@ -451,7 +349,6 @@ function ProductUploadService($q, $timeout, OrderCloud, catalogid, UploadService
         result.CategoryIssues = [];
 
         var categoryList = angular.copy(categories);
-        //Category Data that has not been mapped
 
         _.each(categories, function(category) {
             validateSingleCat(category);
