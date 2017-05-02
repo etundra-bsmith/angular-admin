@@ -2,7 +2,7 @@ angular.module('orderCloud')
     .factory('ocOrdersService', OrderCloudOrdersService)
 ;
 
-function OrderCloudOrdersService($q, $filter, OrderCloud) {
+function OrderCloudOrdersService($q, $filter, OrderCloudSDK) {
     var service = {
         List: _list
     };
@@ -35,16 +35,24 @@ function OrderCloudOrdersService($q, $filter, OrderCloud) {
             parameters.filters.status = parameters.status;
         }
 
-        var filters = angular.extend({status: '!Unsubmitted'}, parameters.filters);
+        //var filters = angular.extend({status: '!Unsubmitted'}, parameters.filters);
 
-        return OrderCloud.Orders.ListIncoming(null, null, parameters.search, parameters.page, parameters.pageSize, parameters.searchOn, parameters.sortBy, filters, parameters.buyerID)
-            .then(function(data) {
-                return gatherBuyerCompanies(data)
+        //TODO: uncomment when ! operator is fixed in API EX-1166
+        //angular.extend(parameters.filters, {status: '!Unsubmitted'});
+
+        return OrderCloudSDK.Orders.List('Incoming', parameters)
+            .then(function(orders) {
+                return gatherBuyerCompanies(orders);
             });
 
         function gatherBuyerCompanies(orders) {
             var buyerIDs = _.uniq(_.pluck(orders.Items, 'FromCompanyID'));
-            return OrderCloud.Buyers.List(null, 1, 100, null, null, {ID: buyerIDs.join('|')})
+            var options = {
+                page: 1,
+                pageSize: 100,
+                filters: {ID: buyerIDs.join('|')}
+            };
+            return OrderCloudSDK.Buyers.List(options)
                 .then(function(buyerData) {
                     var queue = [];
                     _.each(orders.Items, function(order) {
@@ -59,15 +67,22 @@ function OrderCloudOrdersService($q, $filter, OrderCloud) {
                 });
 
             function getUserGroups(order) {
-                return OrderCloud.UserGroups.Get(order.xp.CustomerNumber, order.FromCompanyID)
-                    .then(function(userGroup) {
-                        order.FromUserGroup = userGroup;
-                        order.FromUserGroupID = userGroup.ID;
-                        return order;
-                    });
+                if (order.xp && order.xp.CustomerNumber) {
+                    return OrderCloudSDK.UserGroups.Get(order.FromCompanyID, order.xp.CustomerNumber)
+                        .then(function(userGroup) {
+                            if (userGroup) {
+                                order.FromUserGroup = userGroup;
+                                order.FromUserGroupID = userGroup.ID;
+                                return order;
+                            } else {
+                                return order;
+                            }
+                        });
+                } else {
+                    return order;
+                }
             }
         }
     }
-    
     return service;
 }

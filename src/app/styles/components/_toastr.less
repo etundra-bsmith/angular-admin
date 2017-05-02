@@ -1,4 +1,9 @@
 #toast-container {
+  &.toast-top-right,
+  &.toast-top-left,
+  &.toast-top {
+    top:@body-padding-top;
+  }
   @media(max-width:@screen-xs-max) {
     .alert {
       width:~"calc(100vw - 25px)";

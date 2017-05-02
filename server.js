@@ -2,9 +2,8 @@
 var config = require('./gulp.config');
 
 var express = require('express'),
-    env = process.env.NODE_ENV = process.env.NODE_ENV || 'dev',
+    env = process.env.NODE_ENV || 'dev',
     app = express(),
-    enforce = require('express-sslify'),
     port = process.env.PORT || 7203,
     bodyParser = require('body-parser');
 
@@ -26,27 +25,27 @@ app.use('/api/*', require('./middleware/middleware'));
 app.use('/api/upload', require('./routes/upload'));
 
 //switch(env) {
-if (env.toLowerCase().includes('prod')) {
-    console.log('*** PROD ***');
-    app.use(express.static(config.root + config.compile.replace('.', '')));
-    app.get('/*', function(req, res) {
-        res.sendFile(config.root + config.compile.replace('.', '') + 'index.html');
-    });
-    //break;
-}
-else {
-    console.log('*** DEV ***');
-    // Host bower_files
-    app.use('/bower_files', express.static(config.root + config.bowerFiles.replace('.', '')));
-    // Host unminfied javascript files
-    app.use(express.static(config.root + config.build.replace('.', '')));
-    // Host unchanged html files
-    app.use(express.static(config.root + config.src.replace('.', '') + 'app/'));
-    app.get('/*', function(req, res) {
-        res.sendFile(config.root + config.build.replace('.', '') + 'index.html');
-    });
-    //break;
-}
+    if (env.toLowerCase().includes('prod')) {
+        console.log('*** PROD ***');
+        app.use(express.static(config.root + config.compile.replace('.', '')));
+        app.get('/*', function(req, res) {
+            res.sendFile(config.root + config.compile.replace('.', '') + 'index.html');
+        });
+        //break;
+    }
+    else {
+        console.log('*** DEV ***');
+        // Host bower_files
+        app.use('/bower_files', express.static(config.root + config.bowerFiles.replace('.', '')));
+        // Host unminfied javascript files
+        app.use(express.static(config.root + config.build.replace('.', '')));
+        // Host unchanged html files
+        app.use(express.static(config.root + config.src.replace('.', '') + 'app/'));
+        app.get('/*', function(req, res) {
+            res.sendFile(config.root + config.build.replace('.', '') + 'index.html');
+        });
+        //break;
+    }
 //}
 
 app.listen(port);
