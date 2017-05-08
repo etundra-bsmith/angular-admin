@@ -2,7 +2,7 @@
   "appname": "DFSI Admin",
   "clientid": "70836978-8494-4C33-9296-6BAB2E6CB1F0",
   "catalogid": "caferio",
-  "environment": "staging",
+  "environment": "prod",
   "defaultstate": "home",
   "html5mode": false,
   "bootswatchtheme": null,
