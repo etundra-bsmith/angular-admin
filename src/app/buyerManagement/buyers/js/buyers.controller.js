@@ -1,11 +1,11 @@
 angular.module('orderCloud')
     .controller('BuyersCtrl', BuyersController);
 
-function BuyersController($exceptionHandler, $state, toastr, ocBuyers, OrderCloud, ocParameters, Parameters, BuyerList) {
+function BuyersController($exceptionHandler, $state, toastr, ocBuyers, OrderCloudSDK, ocParameters, Parameters, BuyerList) {
     var vm = this;
     vm.list = BuyerList;
     vm.parameters = Parameters;
-    vm.sortSelection = Parameters.sortBy ? (Parameters.sortBy.indexOf('!') == 0 ? Parameters.sortBy.split('!')[1] : Parameters.sortBy) : null;
+    vm.sortSelection = Parameters.sortBy ? (Parameters.sortBy.indexOf('!') === 0 ? Parameters.sortBy.split('!')[1] : Parameters.sortBy) : null;
 
     //Check if search was used
     vm.searchResults = Parameters.search && Parameters.search.length > 0;
@@ -17,17 +17,11 @@ function BuyersController($exceptionHandler, $state, toastr, ocBuyers, OrderClou
 
     //Reload the state with new search parameter & reset the page
     vm.search = function() {
-        $state.go('.', ocParameters.Create(vm.parameters, true), {notify:false}); //don't trigger $stateChangeStart/Success, this is just so the URL will update with the search
-        vm.searchLoading = OrderCloud.Buyers.List(vm.parameters.search, 1, vm.parameters.pageSize)
-            .then(function(data) {
-                vm.list = data;
-                vm.searchResults = vm.parameters.search.length > 0;
-            })
+        vm.filter(true);
     };
 
     //Clear the search parameter, reload the state & reset the page
     vm.clearSearch = function() {
-        vm.searchResults = false;
         vm.parameters.search = null;
         vm.filter(true);
     };
@@ -55,7 +49,8 @@ function BuyersController($exceptionHandler, $state, toastr, ocBuyers, OrderClou
 
     //Load the next page of results with all of the same parameters
     vm.loadMore = function() {
-        return OrderCloud.Buyers.List(Parameters.search, vm.list.Meta.Page + 1, Parameters.pageSize || vm.list.Meta.PageSize, Parameters.searchOn, Parameters.sortBy, Parameters.filters)
+        var parameters = angular.extend(Parameters, {page:vm.list.Meta.Page + 1});
+        return OrderCloudSDK.Buyers.List(parameters)
             .then(function(data) {
                 vm.list.Items = vm.list.Items.concat(data.Items);
                 vm.list.Meta = data.Meta;
@@ -65,9 +60,9 @@ function BuyersController($exceptionHandler, $state, toastr, ocBuyers, OrderClou
     vm.createBuyer = function() {
         ocBuyers.Create()
             .then(function(data) {
-                toastr.success(data.Name + ' was created.', 'Success!');
-                $state.go('buyer.settings', {buyerid: data.ID});
-            })
+                toastr.success(data.Name + ' was created.');
+                $state.go('buyer', {buyerid: data.ID});
+            });
     };
 
     vm.deleteBuyer = function(scope) {
@@ -76,12 +71,12 @@ function BuyersController($exceptionHandler, $state, toastr, ocBuyers, OrderClou
                 vm.list.Items.splice(scope.$index, 1);
                 vm.list.Meta.TotalCount--;
                 vm.list.Meta.ItemRange[1]--;
-                toastr.success(scope.buyer.Name + ' was deleted.', 'Success!');
+                toastr.success(scope.buyer.Name + ' was deleted.');
             })
             .catch(function(ex) {
                 $exceptionHandler(ex);
-            })
-    }
+            });
+    };
 }
 
 

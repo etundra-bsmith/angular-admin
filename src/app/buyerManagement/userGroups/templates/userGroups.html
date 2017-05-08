@@ -4,7 +4,7 @@
             User Groups
         </h3>
         <!--====== CREATE ======-->
-        <div class="l-page-header__btns">
+        <div class="l-page-header__btns" oc-if-roles="UserGroupAdmin">
             <button type="button" class="btn btn-primary btn-block" ng-click="userGroups.createGroup()"><i class="fa fa-plus-circle"></i>
                 New User Group
             </button>
@@ -12,24 +12,27 @@
     </header>
 
     <!--====== SEARCH/FILTERS ======-->
-    <form name="userGroups.searchForm" pretty-submit>
-        <fieldset class="form-group">
-            <div class="input-group">
-                <span class="input-group-addon">
-                    <i class="fa fa-search"></i>
-                </span>
-                <input type="search" ng-change="userGroups.search()" ng-model-options="{debounce:1000}" placeholder="Search Users..." ng-model="userGroups.parameters.search" class="form-control">
-                <span ng-if="userGroups.searchResults" class="input-group-btn">
-                    <button class="btn btn-default" type="button" aria-label="Clear Search" ng-click="userGroups.clearSearch()"><i class="fa fa-times"></i> <span class="hidden-xs">Clear</span></button>
-                </span>
-            </div>
-        </fieldset>
-    </form>
+    <div ng-if="userGroups.list.Items.length || (!userGroups.list.Items.length && userGroups.searchResults)">
+        <form name="userGroups.searchForm" pretty-submit>
+            <fieldset class="form-group">
+                <div class="input-group">
+                    <span class="input-group-addon">
+                        <i class="fa fa-search"></i>
+                    </span>
+                    <input type="search" ng-change="userGroups.search()" ng-model-options="{debounce:1000}" placeholder="Search Users..." ng-model="userGroups.parameters.search" class="form-control">
+                    <span ng-if="userGroups.searchResults" class="input-group-btn">
+                        <button class="btn btn-default" type="button" aria-label="Clear Search" ng-click="userGroups.clearSearch()"><i class="fa fa-times"></i> <span class="hidden-xs">Clear</span></button>
+                    </span>
+                </div>
+            </fieldset>
+        </form>
+    </div>
 
     <!--====== LIST ======-->
     <div cg-busy="userGroups.searchLoading">
         <div class="no-matches" ng-if="!userGroups.list.Items.length">
-            <b>No matches found.</b>
+            <b ng-if="userGroups.searchResults">No matches found.</b>
+            <b ng-if="!userGroups.searchResults">This buyer organization does not have any user groups.</b>
         </div>
         <div ng-if="userGroups.list.Items.length">
             <div class="row">
@@ -49,7 +52,7 @@
                         <col>
                         <col>
                         <col>
-                        <col>
+                        <col oc-if-roles="UserGroupAdmin">
                     </colgroup>
                     <thead>
                     <tr>
@@ -64,7 +67,7 @@
                             <i class="fa fa-caret-up" ng-show="userGroups.parameters.sortBy == '!Name'"></i>
                         </th>
                         <th>Description</th>
-                        <th></th>
+                        <th oc-if-roles="UserGroupAdmin"></th>
                     </tr>
                     </thead>
                     <tbody>
@@ -74,27 +77,28 @@
                             <a href="" ui-sref="userGroup({usergroupid:userGroup.ID})">{{userGroup.Name}}</a>
                         </td>
                         <td>{{userGroup.Description}}</td>
-                        <td>
+                        <td oc-if-roles="UserGroupAdmin">
                             <button ng-click="userGroups.deleteGroup(this)" class="btn btn-danger btn-xs"><i class="fa fa-trash-o"></i> <span class="hidden-xs">Delete</span></button>
                         </td>
                     </tr>
                     </tbody>
                 </table>
             </div>
-            <uib-pagination class="pagination-sm pull-right"
-                            ng-if="application.$ocMedia('min-width:768px') && userGroups.list.Meta.TotalPages > 1"
-                            total-items="userGroups.list.Meta.TotalCount"
-                            items-per-page="userGroups.list.Meta.PageSize"
-                            max-size="5"
-                            boundary-links="userGroups.list.Meta.TotalPages > 5"
-                            ng-model="userGroups.list.Meta.Page"
-                            ng-change="userGroups.pageChanged()">
-            </uib-pagination>
+            <ul uib-pagination
+                class="pagination-sm pull-right hidden-xs"
+                boundary-links="userGroups.list.Meta.TotalPages > 5"
+                max-size="5"
+                total-items="userGroups.list.Meta.TotalCount"
+                items-per-page="userGroups.list.Meta.PageSize"
+                ng-model="userGroups.list.Meta.Page"
+                ng-if="userGroups.list.Meta.TotalPages > 1"
+                ng-change="userGroups.pageChanged()">
+            </ul>
             <button type="button"
-                    ng-if="application.$ocMedia('max-width:767px')"
-                    class="btn btn-default btn-block btn-lg"
+                    class="btn btn-default btn-block btn-lg visible-xs"
                     ng-show="userGroups.list.Meta.Page < userGroups.list.Meta.TotalPages"
-                    ng-click="userGroups.loadMore()">Load More</button>
+                    ng-click="userGroups.loadMore()">Load More
+            </button>
         </div>
     </div>
 </article>

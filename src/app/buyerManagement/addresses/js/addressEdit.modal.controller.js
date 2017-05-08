@@ -2,7 +2,7 @@ angular.module('orderCloud')
     .controller('AddressEditModalCtrl', AddressEditModalController)
 ;
 
-function AddressEditModalController($uibModalInstance, $exceptionHandler, $scope, OrderCloud, ocGeography, SelectedAddress, SelectedBuyerID) {
+function AddressEditModalController($timeout, $uibModalInstance, $exceptionHandler, $scope, OrderCloudSDK, ocGeography, SelectedAddress, SelectedBuyerID) {
     var vm = this;
     vm.address = angular.copy(SelectedAddress);
     vm.addressName = SelectedAddress.AddressName;
@@ -10,13 +10,18 @@ function AddressEditModalController($uibModalInstance, $exceptionHandler, $scope
     vm.states = ocGeography.States;
 
     $scope.$watch(function() {
-        return vm.address.Country
+        return vm.address.Country;
     }, function(n, o) {
-        if (n && n != o) vm.address.State = null;
+        if (n && n != o) {
+            vm.address.State = null;
+            $timeout(function() {
+                vm.form.State.$$element.focus();
+            }, 100);
+        }
     });
 
     vm.submit = function() {
-        vm.loading = OrderCloud.Addresses.Update(SelectedAddress.ID, vm.address, SelectedBuyerID)
+        vm.loading = OrderCloudSDK.Addresses.Update(SelectedBuyerID, SelectedAddress.ID, vm.address)
             .then(function(updatedAddress) {
                 $uibModalInstance.close(updatedAddress);
             })
@@ -27,5 +32,5 @@ function AddressEditModalController($uibModalInstance, $exceptionHandler, $scope
 
     vm.cancel = function() {
         $uibModalInstance.dismiss();
-    }
+    };
 }

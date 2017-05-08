@@ -10,13 +10,16 @@ function BuyersConfig($stateProvider) {
             templateUrl: 'buyerManagement/buyers/templates/buyers.html',
             controller: 'BuyersCtrl',
             controllerAs: 'buyers',
+            data: {
+                pageTitle: 'Buyer Organizations'
+            },
             resolve: {
                 Parameters: function($stateParams, ocParameters) {
                     return ocParameters.Get($stateParams);
                 },
-                BuyerList: function(OrderCloud, Parameters) {
-                    return OrderCloud.Buyers.List(Parameters.search, Parameters.page, Parameters.pageSize);
+                BuyerList: function(OrderCloudSDK, Parameters) {
+                    return OrderCloudSDK.Buyers.List(Parameters);
                 }
             }
-        })
+        });
 }

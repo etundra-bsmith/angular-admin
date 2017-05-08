@@ -2,7 +2,7 @@ angular.module('orderCloud')
     .factory('ocSpendingAccounts', OrderCloudSpendingAccounts)
 ;
 
-function OrderCloudSpendingAccounts($q, $uibModal, ocConfirm, OrderCloud) {
+function OrderCloudSpendingAccounts($q, $uibModal, ocConfirm, OrderCloudSDK) {
     var service = {
         Create: _create,
         Edit: _edit,
@@ -25,7 +25,7 @@ function OrderCloudSpendingAccounts($q, $uibModal, ocConfirm, OrderCloud) {
                     return buyerid;
                 }
             }
-        }).result
+        }).result;
     }
 
     function _edit(spendingAccount, buyerid) {
@@ -36,32 +36,41 @@ function OrderCloudSpendingAccounts($q, $uibModal, ocConfirm, OrderCloud) {
             bindToController: true,
             resolve: {
                 SelectedSpendingAccount: function() {
-                    return spendingAccount
+                    return spendingAccount;
                 },
                 SelectedBuyerID: function() {
                     return buyerid;
                 }
             }
-        }).result
+        }).result;
     }
 
     function _delete(spendingAccount, buyerid) {
-        return ocConfirm.Confirm({message:'Are you sure you want to delete this spending account? <br> <b>This action cannot be undone.</b>', confirmText: 'Delete spending account', cancelText:'Cancel'})
+        return ocConfirm.Confirm({
+                message:'Are you sure you want to delete <br> <b>' + spendingAccount.Name + '</b>?',
+                confirmText: 'Delete spending account',
+                type: 'delete'})
             .then(function() {
-                return OrderCloud.SpendingAccounts.Delete(spendingAccount.ID, buyerid)
-            })
+                return OrderCloudSDK.SpendingAccounts.Delete(buyerid, spendingAccount.ID);
+            });
     }
 
     function _getAssignments(level, buyerid, usergroupid) {
-        return OrderCloud.SpendingAccounts.ListAssignments(null, null, usergroupid, level, null, 100, buyerid)
+        var options = {
+            userGroupID: usergroupid,
+            level:level,
+            pageSize:100
+        };
+        return OrderCloudSDK.SpendingAccounts.ListAssignments(buyerid, options)
             .then(function(data1) {
                 var df = $q.defer(),
                     queue = [],
                     totalPages = angular.copy(data1.Meta.TotalPages),
                     currentPage = angular.copy(data1.Meta.Page);
-                while(currentPage <= totalPages) {
+                while(currentPage < totalPages) {
                     currentPage++;
-                    queue.push(OrderCloud.SpendingAccounts.ListAssignments(null, null, usergroupid, level, currentPage, 100, buyerid));
+                    options.page = currentPage;
+                    queue.push(OrderCloudSDK.SpendingAccounts.ListAssignments(buyerid, options));
                 }
                 $q.all(queue)
                     .then(function(results) {
@@ -71,7 +80,7 @@ function OrderCloudSpendingAccounts($q, $uibModal, ocConfirm, OrderCloud) {
                         df.resolve(data1.Items);
                     });
                 return df.promise;
-            })
+            });
     }
 
     function _mapAssignments(allAssignments, spendingAccountList) {
@@ -92,17 +101,17 @@ function OrderCloudSpendingAccounts($q, $uibModal, ocConfirm, OrderCloud) {
             var existingAssignment = _.where(allAssignments, {SpendingAccountID:spendingAccount.ID})[0];
             if (existingAssignment && !spendingAccount.Assigned) {
                 changedAssignments.push({
-                    "old": existingAssignment,
-                    "new": null
-                })
+                    'old': existingAssignment,
+                    'new': null
+                });
             } else if (!existingAssignment && spendingAccount.Assigned) {
                 changedAssignments.push({
-                    "old": null,
-                    "new": {
+                    'old': null,
+                    'new': {
                         UserGroupID: userGroupID,
                         SpendingAccountID: spendingAccount.ID
                     }
-                })
+                });
             }
         });
 
@@ -119,7 +128,7 @@ function OrderCloudSpendingAccounts($q, $uibModal, ocConfirm, OrderCloud) {
                 assignmentQueue.push((function() {
                     var d = $q.defer();
 
-                    OrderCloud.SpendingAccounts.SaveAssignment(diff.new, buyerid) // -- Create new User Assignment
+                    OrderCloudSDK.SpendingAccounts.SaveAssignment(buyerid, diff.new) // -- Create new User Assignment
                         .then(function() {
                             allAssignments.push(diff.new); //add the new assignment to the assignment list
                             d.resolve();
@@ -130,12 +139,12 @@ function OrderCloudSpendingAccounts($q, $uibModal, ocConfirm, OrderCloud) {
                         });
 
                     return d.promise;
-                })())
+                })());
             } else if (diff.old && !diff.new) { // -- Delete existing User Assignment
                 assignmentQueue.push((function() {
                     var d = $q.defer();
 
-                    OrderCloud.SpendingAccounts.DeleteAssignment(diff.old.SpendingAccountID, null, diff.old.UserGroupID, buyerid)
+                    OrderCloudSDK.SpendingAccounts.DeleteAssignment(buyerid, diff.old.SpendingAccountID, {userGroupID: diff.old.UserGroupID})
                         .then(function() {
                             allAssignments.splice(allAssignments.indexOf(diff.old), 1); //remove the old assignment from the assignment list
                             d.resolve();
@@ -146,7 +155,7 @@ function OrderCloudSpendingAccounts($q, $uibModal, ocConfirm, OrderCloud) {
                         });
 
                     return d.promise;
-                })())
+                })());
             }
         });
 

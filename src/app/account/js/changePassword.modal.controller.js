@@ -1,31 +1,31 @@
 angular.module('orderCloud')
-	.controller('ChangePasswordModalCtrl', ChangePasswordModalController)
-;
+	.controller('ChangePasswordModalCtrl', ChangePasswordModalController);
 
-function ChangePasswordModalController(toastr, $state, $exceptionHandler, AccountService, $uibModalInstance, CurrentUser){
+function ChangePasswordModalController($exceptionHandler, OrderCloudSDK, $uibModalInstance, CurrentUser, clientid, scope) {
 	var vm = this;
 	vm.currentUser = CurrentUser;
 
-	vm.changePassword = function() {
-		AccountService.ChangePassword(vm.currentUser)
-			.then(function() {
-				toastr.success('Password successfully changed', 'Success!');
-				vm.currentUser.CurrentPassword = null;
-				vm.currentUser.NewPassword = null;
-				vm.currentUser.ConfirmPassword = null;
-				vm.submit();
-				$state.go('account.information');
+	vm.submit = function () {
+		var checkPasswordCredentials = {
+			Username: vm.currentUser.Username,
+			Password: vm.currentUser.CurrentPassword
+		};
+
+		return vm.loading = OrderCloudSDK.Auth.Login(checkPasswordCredentials.Username, checkPasswordCredentials.Password, clientid, scope)
+			.then(function () {
+				return OrderCloudSDK.Me.ResetPasswordByToken({
+						NewPassword: vm.currentUser.NewPassword
+					})
+					.then(function () {
+						$uibModalInstance.close();
+					});
 			})
-			.catch(function(ex) {
+			.catch(function (ex) {
 				$exceptionHandler(ex);
 			});
 	};
 
-	vm.submit = function() {
-		$uibModalInstance.close();
-	};
-
-	vm.cancel = function() {
-		$uibModalInstance.dismiss('cancel');
+	vm.cancel = function () {
+		$uibModalInstance.dismiss();
 	};
 }

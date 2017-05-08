@@ -2,14 +2,16 @@ angular.module('orderCloud')
     .controller('OrdersCtrl', OrdersController)
 ;
 
-function OrdersController($state, $ocMedia, OrderCloud, ocParameters, ocOrdersService, Parameters, OrderList, BuyerCompanies) {
+
+function OrdersController($state, $ocMedia, OrderCloudSDK, ocParameters, ocOrdersService, Parameters, OrderList, BuyerCompanies, UserGroupsList) {
     var vm = this;
     if (Parameters.fromDate) Parameters.fromDate = new Date(Parameters.fromDate);
     if (Parameters.toDate) Parameters.toDate = new Date(Parameters.toDate);
     delete Parameters.filters.DateSubmitted;
     vm.parameters = Parameters;
-    vm.list = OrderList;
+    vm.list = OrderList || [];
     vm.buyerCompanies = BuyerCompanies;
+    vm.userGroups = UserGroupsList;
     vm.sortSelection = Parameters.sortBy ? (Parameters.sortBy.indexOf('!') == 0 ? Parameters.sortBy.split('!')[1] : Parameters.sortBy) : null;
 
     vm.orderStatuses = [
@@ -37,13 +39,7 @@ function OrdersController($state, $ocMedia, OrderCloud, ocParameters, ocOrdersSe
 
     //Reload the state with new search parameter & reset the page
     vm.search = function() {
-        $state.go('.', ocParameters.Create(vm.parameters, true), {notify:false}); //don't trigger $stateChangeStart/Success, this is just so the URL will update with the search
-        vm.parameters.pageSize = Parameters.pageSize || 12;
-        vm.searchLoading = ocOrdersService.List(vm.parameters)
-            .then(function(data) {
-                vm.list = data;
-                vm.searchResults = vm.parameters.search.length > 0;
-            })
+        vm.filter(true);
     };
 
     //Clear the search parameter, reload the state & reset the page
@@ -56,6 +52,11 @@ function OrdersController($state, $ocMedia, OrderCloud, ocParameters, ocOrdersSe
     //Clear relevant filters, reload the state & reset the page
     vm.clearFilters = function() {
         vm.parameters.filters = null;
+        vm.parameters.FromUserGroupID = null;
+        vm.parameters.FromCompanyID = null;
+        vm.parameters.status = null;
+        vm.parameters.fromDate = null;
+        vm.parameters.toDate = null;
         $ocMedia('max-width:767px') ? vm.parameters.sortBy = null : angular.noop(); //Clear out sort by on mobile devices
         vm.filter(true);
     };
@@ -99,9 +100,26 @@ function OrdersController($state, $ocMedia, OrderCloud, ocParameters, ocOrdersSe
     };
 
     vm.searchBuyerCompanies = function(search) {
-        return OrderCloud.Buyers.List(search, 1, 100)
+        var options = {
+            search: search,
+            page: 1,
+            pageSize: 100
+        };
+        return OrderCloudSDK.Buyers.List(options)
             .then(function(data){
                 vm.buyerCompanies = data;
+            });
+    };
+
+    vm.searchUserGroups = function(search) {
+        var parameters = {
+            search: search,
+            page: 1,
+            pageSize: 100
+        };
+        return OrderCloudSDK.UserGroups.List(parameters)
+            .then(function(data){
+                vm.userGroups = data;
             });
     };
 }

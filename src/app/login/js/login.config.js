@@ -6,9 +6,12 @@ function LoginConfig($stateProvider) {
     $stateProvider
         .state('login', {
             url: '/login/:token',
-            templateUrl: 'login/templates/login.tpl.html',
+            templateUrl: 'login/templates/login.html',
             controller: 'LoginCtrl',
-            controllerAs: 'login'
+            controllerAs: 'login',
+            data: {
+                pageTitle: 'Login'
+            }
         })
     ;
 }

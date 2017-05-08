@@ -2,7 +2,7 @@ angular.module('orderCloud')
     .factory('ocCostCenters', OrderCloudCostCenters)
 ;
 
-function OrderCloudCostCenters($q, $uibModal, ocConfirm, OrderCloud) {
+function OrderCloudCostCenters($q, $uibModal, ocConfirm, OrderCloudSDK) {
     var service = {
         Create: _create,
         Edit: _edit,
@@ -25,7 +25,7 @@ function OrderCloudCostCenters($q, $uibModal, ocConfirm, OrderCloud) {
                     return buyerid;
                 }
             }
-        }).result
+        }).result;
     }
 
     function _edit(costCenter, buyerid) {
@@ -36,32 +36,41 @@ function OrderCloudCostCenters($q, $uibModal, ocConfirm, OrderCloud) {
             bindToController: true,
             resolve: {
                 SelectedCostCenter: function() {
-                    return costCenter
+                    return costCenter;
                 },
                 SelectedBuyerID: function() {
                     return buyerid;
                 }
             }
-        }).result
+        }).result;
     }
 
     function _delete(costCenter, buyerid) {
-        return ocConfirm.Confirm({message:'Are you sure you want to delete this cost center? <br> <b>This action cannot be undone.</b>', confirmText: 'Delete cost center', cancelText:'Cancel'})
+        return ocConfirm.Confirm({
+                message:'Are you sure you want to delete <br> <b>' + costCenter.Name + '</b>?',
+                confirmText: 'Delete cost center',
+                type: 'delete'})
             .then(function() {
-                return OrderCloud.CostCenters.Delete(costCenter.ID, buyerid)
-            })
+                return OrderCloudSDK.CostCenters.Delete(buyerid, costCenter.ID);
+            });
     }
 
     function _getAssignments(level, buyerid, usergroupid) {
-        return OrderCloud.CostCenters.ListAssignments(null, null, usergroupid, level, null, 100, buyerid)
+        var options = {
+            userGroupID: usergroupid,
+            level: level,
+            pageSize: 100
+        };
+        return OrderCloudSDK.CostCenters.ListAssignments(buyerid, options)
             .then(function(data1) {
                 var df = $q.defer(),
                     queue = [],
                     totalPages = angular.copy(data1.Meta.TotalPages),
                     currentPage = angular.copy(data1.Meta.Page);
-                while(currentPage <= totalPages) {
+                while(currentPage < totalPages) {
                     currentPage++;
-                    queue.push(OrderCloud.CostCenters.ListAssignments(null, null, usergroupid, level, currentPage, 100, buyerid));
+                    options.page = currentPage;
+                    queue.push(OrderCloudSDK.CostCenters.ListAssignments(buyerid, options));
                 }
                 $q.all(queue)
                     .then(function(results) {
@@ -71,7 +80,7 @@ function OrderCloudCostCenters($q, $uibModal, ocConfirm, OrderCloud) {
                         df.resolve(data1.Items);
                     });
                 return df.promise;
-            })
+            });
     }
 
     function _mapAssignments(allAssignments, costCenterList) {
@@ -92,17 +101,17 @@ function OrderCloudCostCenters($q, $uibModal, ocConfirm, OrderCloud) {
             var existingAssignment = _.where(allAssignments, {CostCenterID:costCenter.ID})[0];
             if (existingAssignment && !costCenter.Assigned) {
                 changedAssignments.push({
-                    "old": existingAssignment,
-                    "new": null
-                })
+                    'old': existingAssignment,
+                    'new': null
+                });
             } else if (!existingAssignment && costCenter.Assigned) {
                 changedAssignments.push({
-                    "old": null,
-                    "new": {
+                    'old': null,
+                    'new': {
                         UserGroupID: userGroupID,
                         CostCenterID: costCenter.ID
                     }
-                })
+                });
             }
         });
 
@@ -119,7 +128,7 @@ function OrderCloudCostCenters($q, $uibModal, ocConfirm, OrderCloud) {
                 assignmentQueue.push((function() {
                     var d = $q.defer();
 
-                    OrderCloud.CostCenters.SaveAssignment(diff.new, buyerid) // -- Create new User Assignment
+                    OrderCloudSDK.CostCenters.SaveAssignment(buyerid, diff.new) // -- Create new User Assignment
                         .then(function() {
                             allAssignments.push(diff.new); //add the new assignment to the assignment list
                             d.resolve();
@@ -130,12 +139,15 @@ function OrderCloudCostCenters($q, $uibModal, ocConfirm, OrderCloud) {
                         });
 
                     return d.promise;
-                })())
+                })());
             } else if (diff.old && !diff.new) { // -- Delete existing User Assignment
                 assignmentQueue.push((function() {
                     var d = $q.defer();
 
-                    OrderCloud.CostCenters.DeleteAssignment(diff.old.CostCenterID, null, diff.old.UserGroupID, buyerid)
+                    var options = {
+                        userGroupID: diff.old.UserGroupID
+                    };
+                    OrderCloudSDK.CostCenters.DeleteAssignment(buyerid, diff.old.CostCenterID, options)
                         .then(function() {
                             allAssignments.splice(allAssignments.indexOf(diff.old), 1); //remove the old assignment from the assignment list
                             d.resolve();
@@ -146,7 +158,7 @@ function OrderCloudCostCenters($q, $uibModal, ocConfirm, OrderCloud) {
                         });
 
                     return d.promise;
-                })())
+                })());
             }
         });
 

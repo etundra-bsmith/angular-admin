@@ -4,7 +4,7 @@ angular.module('orderCloud')
 
 function ProductPricingConfig($stateProvider) {
     $stateProvider
-        .state('productDetail.pricing', {
+        .state('product.pricing', {
             url: '/pricing',
             params: {
                 pricescheduleid: undefined
@@ -12,9 +12,20 @@ function ProductPricingConfig($stateProvider) {
             templateUrl: 'productManagement/pricing/templates/productPricing.html',
             controller: 'ProductPricingCtrl',
             controllerAs: 'productPricing',
+            data: {
+                pageTitle: 'Product Pricing'
+            },
             resolve : {
-                AssignmentList: function(ocProductPricing, $stateParams, buyerid) {
-                    return ocProductPricing.AssignmentList($stateParams.productid, buyerid);
+                AssignmentList: function(ocProductPricing, $stateParams, SelectedProduct) {
+                    return ocProductPricing.AssignmentList($stateParams.productid)
+                        .then(function(data) {
+                            if (!SelectedProduct.DefaultPriceScheduleID) {
+                                return data;
+                            } else {
+                                data.Items.push({ProductID: SelectedProduct.ID, PriceScheduleID: SelectedProduct.DefaultPriceScheduleID});
+                                return data;
+                            }
+                        });
                 },
                 //when we group together the price schedules by the id , it messes with the pagination, I would would have to update the meta data before it resolves , and then translate the results.
                 AssignmentData: function (ocProductPricing, AssignmentList) {
@@ -22,18 +33,7 @@ function ProductPricingConfig($stateProvider) {
                 }
             }
         })
-        .state('productDetail.createAssignment', {
-            url: '/new-price',
-            templateUrl: 'productManagement/pricing/templates/productCreateAssignment.html',
-            controller: 'ProductCreateAssignmentCtrl',
-            controllerAs: 'productCreateAssignment',
-            resolve: {
-                Buyers: function(OrderCloud){
-                    return OrderCloud.Buyers.List();
-                }
-            }
-        })
-        .state('productDetail.pricing.priceScheduleDetail', {
+        .state('product.pricing.priceScheduleDetail', {
             url: '/:pricescheduleid',
             templateUrl: 'productManagement/pricing/templates/priceScheduleDetail.html',
             controller: 'PriceScheduleDetailCtrl',

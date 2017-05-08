@@ -2,7 +2,7 @@ angular.module('orderCloud')
     .controller('CostCentersCtrl', CostCentersController)
 ;
 
-function CostCentersController($exceptionHandler, $state, $stateParams, toastr, OrderCloud, ocParameters, ocCostCenters, CurrentAssignments, CostCentersList, Parameters) {
+function CostCentersController($exceptionHandler, $state, $stateParams, toastr, OrderCloudSDK, ocParameters, ocCostCenters, CurrentAssignments, CostCentersList, Parameters) {
     var vm = this;
     vm.list = CostCentersList;
     vm.parameters = Parameters;
@@ -19,14 +19,7 @@ function CostCentersController($exceptionHandler, $state, $stateParams, toastr, 
 
     //Reload the state with new search parameter & reset the page
     vm.search = function() {
-        $state.go('.', ocParameters.Create(vm.parameters, true), {notify:false}); //don't trigger $stateChangeStart/Success, this is just so the URL will update with the search
-        vm.searchLoading = OrderCloud.CostCenters.List(vm.parameters.search, 1, vm.parameters.pageSize, vm.parameters.searchOn, vm.parameters.sortBy, vm.parameters.filters, vm.parameters.buyerid)
-            .then(function(data) {
-                vm.list = ocCostCenters.Assignments.Map(CurrentAssignments, data);
-                vm.searchResults = vm.parameters.search.length > 0;
-
-                selectedCheck();
-            })
+        vm.filter(true);
     };
 
     //Clear the search parameter, reload the state & reset the page
@@ -58,10 +51,12 @@ function CostCentersController($exceptionHandler, $state, $stateParams, toastr, 
 
     //Load the next page of results with all of the same parameters
     vm.loadMore = function() {
-        return OrderCloud.CostCenters.List(Parameters.search, vm.list.Meta.Page + 1, Parameters.pageSize || vm.list.Meta.PageSize, Parameters.searchOn, Parameters.sortBy, Parameters.filters, Parameters.buyerid)
+        var parameters = angular.extend(Parameters, {page:vm.list.Meta.Page + 1});
+        return OrderCloudSDK.CostCenters.List(parameters.buyerid, parameters)
             .then(function(data) {
-                vm.list.Items = vm.list.Items.concat(data.Items);
-                vm.list.Meta = data.Meta;
+                var mappedData = ocCostCenters.Assignments.Map(CurrentAssignments, data);
+                vm.list.Items = vm.list.Items.concat(mappedData.Items);
+                vm.list.Meta = mappedData.Meta;
 
                 selectedCheck();
             });
@@ -79,7 +74,7 @@ function CostCentersController($exceptionHandler, $state, $stateParams, toastr, 
 
     vm.selectAllItems = function() {
         vm.allItemsSelected = !vm.allItemsSelected;
-        _.map(vm.list.Items, function(i) { i.Assigned = vm.allItemsSelected });
+        _.map(vm.list.Items, function(i) { i.Assigned = vm.allItemsSelected; });
 
         changedCheck();
     };
@@ -109,8 +104,8 @@ function CostCentersController($exceptionHandler, $state, $stateParams, toastr, 
                 changedCheck();
                 selectedCheck();
 
-                toastr.success('Cost center assignments updated.', 'Success!');
-            })
+                toastr.success('Cost center assignments updated.');
+            });
     };
 
     vm.createCostCenter = function() {
@@ -123,7 +118,7 @@ function CostCentersController($exceptionHandler, $state, $stateParams, toastr, 
                     };
 
                     //Automatically assign the new user to this user group
-                    vm.searchLoading = OrderCloud.CostCenters.SaveAssignment(newAssignment, $stateParams.buyerid)
+                    vm.searchLoading = OrderCloudSDK.CostCenters.SaveAssignment($stateParams.buyerid, newAssignment)
                         .then(function() {
                             newCostCenter.Assigned = true;
                             CurrentAssignments.push(newAssignment);
@@ -143,7 +138,7 @@ function CostCentersController($exceptionHandler, $state, $stateParams, toastr, 
             vm.list.Items.push(n);
             vm.list.Meta.TotalCount++;
             vm.list.Meta.ItemRange[1]++;
-            toastr.success(n.Name + ' was created.', 'Success!');
+            toastr.success(n.Name + ' was created.');
         }
     };
 
@@ -160,19 +155,19 @@ function CostCentersController($exceptionHandler, $state, $stateParams, toastr, 
 
                     changedCheck();
                 }
-                toastr.success(updatedCostCenter.Name + ' was updated.', 'Success!');
-            })
+                toastr.success(updatedCostCenter.Name + ' was updated.');
+            });
     };
 
     vm.deleteCostCenter = function(scope) {
         ocCostCenters.Delete(scope.costCenter, $stateParams.buyerid)
             .then(function() {
-                toastr.success(scope.costCenter.Name + ' was deleted.', 'Success!');
+                toastr.success(scope.costCenter.Name + ' was deleted.');
                 vm.list.Items.splice(scope.$index, 1);
                 vm.list.Meta.TotalCount--;
                 vm.list.Meta.ItemRange[1]--;
 
                 changedCheck();
-            })
+            });
     };
 }

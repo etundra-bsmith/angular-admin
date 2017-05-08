@@ -1,4 +1,5 @@
 var source = './src/',
+    moduleName = 'orderCloud',
     assets = 'assets/',
     build = './build/',
     bowerFiles = './bower_components/',
@@ -9,7 +10,15 @@ var source = './src/',
     gulp_dir = './gulp/',
     fs = require('fs');
 
+try {
+    var saasConfig = require(source + 'app/saas/gulp.config');
+} catch(ex) {
+    var saasConfig = {};
+}
+
 module.exports = {
+    moduleName: moduleName,
+    saas: saasConfig,
     bowerFiles: bowerFiles,
     npmFiles: npmFiles,
     src: source,
@@ -32,13 +41,17 @@ module.exports = {
     ],
     scripts: [
         source + 'app/**/*.js',
+        '!' + source + '**/saas/gulp.config.js',
         '!' + source + '**/*.spec.js',
         '!' + source + '**/*.test.js'
     ],
     appFiles: [
+        build + '**/saas.module.js',
+        build + '**/saas/**/*.js',
+        '!' + build + '**/saas/gulp.config.js',
         build + '**/app.module.js',
-        build + '**/common/config/routing.js',
-        build + '**/common/config/*.js',
+        build + '**/common/config/**/routing.js',
+        build + '**/common/config/**/*.js',
         build + '**/*s.config.js',
         build + '**/*.config.js',
         build + '**/app.run.js',
@@ -54,12 +67,12 @@ module.exports = {
     templateCacheSettings: {
         standalone: false,
         moduleSystem: 'IIFE',
-        module: 'orderCloud'
+        module: moduleName
     },
     ngConstantSettings: {
-        name: 'orderCloud',
+        name: moduleName,
         deps: false,
-        constants: getConstants()
+        constants: saasConfig.getConstants ? saasConfig.getConstants() : getConstants()
     },
     autoprefixerSettings: {
         browsers: ['last 2 versions'],
@@ -76,20 +89,25 @@ function getConstants() {
     var environment = process.env.environment || constants.environment;
     switch (environment) {
         case 'local':
-            result.authurl = 'http://core.four51.com:11629/oauth/token';
+            result.authurl = 'http://core.four51.com:11629';
             result.apiurl = 'http://core.four51.com:9002';
-            break;
-        case 'test':
-            result.authurl = 'https://testauth.ordercloud.io/oauth/token';
-            result.apiurl = 'https://testapi.ordercloud.io';
+            result.devapiurl = 'http://localhost:7203/api';
             break;
         case 'qa':
-            result.authurl = 'https://qaauth.ordercloud.io/oauth/token';
+            result.authurl = 'https://qaauth.ordercloud.io';
             result.apiurl = 'https://qaapi.ordercloud.io';
+            result.devapiurl = 'http://localhost:7203/api';
+            break;
+        case 'staging':
+            result.authurl = 'https://stagingauth.ordercloud.io';
+            result.apiurl = 'https://stagingapi.ordercloud.io';
+            result.devapiurl = 'http://localhost:7203/api';
             break;
         default:
-            result.authurl = 'https://auth.ordercloud.io/oauth/token';
+            result.authurl = 'https://auth.ordercloud.io';
             result.apiurl = 'https://api.ordercloud.io';
+            //result.devapiurl = 'https://cups-admin.herokuapp.com/api';
+            result.devapiurl = 'http://localhost:7203/api';
             break;
     }
     if (process.env.apiurl && process.env.authurl) {
@@ -104,8 +122,14 @@ function getConstants() {
     if (process.env.appname) result.appname = process.env.appname;
     if (process.env.scope) result.scope = process.env.scope;
     if (process.env.ocscope) result.ocscope = process.env.ocscope;
+
     if (process.env.buyerid) result.buyerid = process.env.buyerid;
     if (process.env.catalogid) result.catalogid = process.env.catalogid;
+    if (process.env.devapiurl) result.devapiurl = process.env.devapiurl;
+
+    if (process.env.html5mode) result.html5mode = process.env.html5mode;
+    if (process.env.bootswatchtheme) result.bootswatchtheme = process.env.bootswatchtheme;
+
     return result;
 }
 
@@ -117,9 +141,9 @@ function _checkBootswatchTheme() {
 
     if (theme) {
         bootswatchBower.main = [
-            "./" + theme + "/bootswatch.less",
-            "./" + theme + "/variables.less"
-        ]
+            './' + theme + '/bootswatch.less',
+            './' + theme + '/variables.less'
+        ];
     }
 
     return bootswatchBower;

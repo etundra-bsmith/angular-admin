@@ -2,7 +2,7 @@ angular.module('orderCloud')
     .controller('AddressesCtrl', AddressesController)
 ;
 
-function AddressesController($exceptionHandler, $state, $stateParams, $ocMedia, toastr, OrderCloud, ocParameters, ocAddresses, CurrentAssignments, AddressList, Parameters){
+function AddressesController($exceptionHandler, $state, $stateParams, $ocMedia, toastr, OrderCloudSDK, ocParameters, ocAddresses, CurrentAssignments, AddressList, Parameters){
     var vm = this;
     vm.list = AddressList;
     vm.parameters = Parameters;
@@ -20,13 +20,7 @@ function AddressesController($exceptionHandler, $state, $stateParams, $ocMedia, 
 
     //Reload the state with new search parameter & reset the page
     vm.search = function() {
-        $state.go('.', ocParameters.Create(vm.parameters, true), {notify:false}); //don't trigger $stateChangeStart/Success, this is just so the URL will update with the search
-        vm.searchLoading = OrderCloud.Addresses.List(vm.parameters.search, 1, vm.parameters.pageSize)
-            .then(function(data) {
-                vm.changedAssignments = [];
-                vm.list = ocAddresses.Assignments.Map(CurrentAssignments, data);
-                vm.searchResults = vm.parameters.search.length > 0;
-            })
+        vm.filter(true);
     };
 
     //Clear the search parameters, reload the state & reset the page
@@ -67,11 +61,83 @@ function AddressesController($exceptionHandler, $state, $stateParams, $ocMedia, 
 
     //Load the next page of results with all of the same parameters
     vm.loadMore = function() {
-        return OrderCloud.Addresses.List(Parameters.search, vm.list.Meta.Page + 1, Parameters.pageSize || vm.list.Meta.PageSize, Parameters.searchOn, Parameters.filters)
+        var parameters = angular.extend(Parameters, {page:vm.list.Meta.Page + 1});
+        return OrderCloudSDK.Addresses.List(parameters.buyerid, parameters)
             .then(function(data) {
                 var mappedData = ocAddresses.Assignments.Map(CurrentAssignments, data);
                 vm.list.Items = vm.list.Items.concat(mappedData.Items);
                 vm.list.Meta = mappedData.Meta;
+
+                selectedCheck();
+            });
+    };
+
+    function selectedCheck() {
+        vm.allShippingSelected = (_.where(vm.list.Items, {shipping:true}).length == vm.list.Items.length);
+        vm.allBillingSelected = (_.where(vm.list.Items, {billing:true}).length == vm.list.Items.length);
+    }
+
+    function changedCheck() {
+        vm.changedAssignments = ocAddresses.Assignments.Compare(CurrentAssignments, vm.list, $stateParams.usergroupid);
+    }
+
+    selectedCheck();
+
+    vm.selectAllItems = function(type) {
+        switch(type) {
+            case 'shipping':
+                vm.allShippingSelected = !vm.allShippingSelected;
+                _.map(vm.list.Items, function(a) { a.shipping = vm.allShippingSelected; });
+                //select for shipping
+                break;
+            case 'billing':
+                vm.allBillingSelected = !vm.allBillingSelected;
+                _.map(vm.list.Items, function(a) { a.billing = vm.allBillingSelected; });
+                //select for billing
+                break;
+            default:
+                break;
+        }
+
+        changedCheck();
+    };
+
+    vm.selectItem = function(scope, type) {
+        switch(type) {
+            case 'shipping':
+                if (!scope.address.shipping) vm.allShippingSelected = false;
+                //select for shipping
+                break;
+            case 'billing':
+                if (!scope.address.billing) vm.allBillingSelected = false;
+                //select for billing
+                break;
+            default:
+                break;
+        }
+
+        changedCheck();
+    };
+
+    vm.resetAssignments = function() {
+        vm.list = ocAddresses.Assignments.Map(CurrentAssignments, vm.list);
+        vm.changedAssignments = [];
+
+        selectedCheck();
+    };
+
+    vm.updateAssignments = function() {
+        vm.searchLoading = ocAddresses.Assignments.Update(CurrentAssignments, vm.changedAssignments, $stateParams.buyerid)
+            .then(function(data) {
+                angular.forEach(data.Errors, function(ex) {
+                    $exceptionHandler(ex);
+                });
+                CurrentAssignments = data.UpdatedAssignments;
+
+                changedCheck();
+                selectedCheck();
+
+                toastr.success('Address assignments updated.');
             });
     };
 
@@ -81,7 +147,7 @@ function AddressesController($exceptionHandler, $state, $stateParams, $ocMedia, 
                 vm.list.Items.push(newAddress);
                 vm.list.Meta.TotalCount++;
                 vm.list.Meta.ItemRange[1]++;
-                toastr.success(newAddress.AddressName + ' was created.', 'Success!');
+                toastr.success(newAddress.AddressName + ' was created.');
             });
     };
 
@@ -99,8 +165,8 @@ function AddressesController($exceptionHandler, $state, $stateParams, $ocMedia, 
                     });
                     vm.changedAssignments = ocAddresses.Assignments.Compare(CurrentAssignments, vm.list, $stateParams.usergroupid);
                 }
-                toastr.success(updatedAddress.AddressName + ' was updated.', 'Success!');
-            })
+                toastr.success(updatedAddress.AddressName + ' was updated.');
+            });
     };
 
     vm.deleteAddress = function(scope) {
@@ -109,56 +175,8 @@ function AddressesController($exceptionHandler, $state, $stateParams, $ocMedia, 
                 vm.list.Items.splice(scope.$index, 1);
                 vm.list.Meta.TotalCount--;
                 vm.list.Meta.ItemRange[1]--;
-                toastr.success(scope.address.AddressName + ' was deleted.', 'Success!');
+                toastr.success(scope.address.AddressName + ' was deleted.');
                 vm.changedAssignments = ocAddresses.Assignments.Compare(CurrentAssignments, vm.list, $stateParams.usergroupid);
             });
-    };
-
-    vm.updateAssignments = function() {
-        vm.searchLoading = ocAddresses.Assignments.Update(CurrentAssignments, vm.changedAssignments, $stateParams.buyerid)
-            .then(function(data) {
-                angular.forEach(data.Errors, function(ex) {
-                    $exceptionHandler(ex);
-                });
-                CurrentAssignments = data.UpdatedAssignments;
-                vm.changedAssignments = ocAddresses.Assignments.Compare(CurrentAssignments, vm.list, $stateParams.usergroupid);
-            })
-    };
-
-    vm.allItemsSelected = false;
-    vm.selectAllItems = function(type) {
-        switch(type) {
-            case 'shipping':
-                vm.allShippingSelected = !vm.allShippingSelected;
-                _.map(vm.list.Items, function(a) { a.shipping = vm.allShippingSelected });
-                vm.changedAssignments = ocAddresses.Assignments.Compare(CurrentAssignments, vm.list, $stateParams.usergroupid);
-                //select for shipping
-                break;
-            case 'billing':
-                vm.allBillingSelected = !vm.allBillingSelected;
-                _.map(vm.list.Items, function(a) { a.billing = vm.allBillingSelected });
-                vm.changedAssignments = ocAddresses.Assignments.Compare(CurrentAssignments, vm.list, $stateParams.usergroupid);
-                //select for billing
-                break;
-            default:
-                break;
-        }
-    };
-
-    vm.selectItem = function(scope, type) {
-        switch(type) {
-            case 'shipping':
-                if (!scope.address.shipping) vm.allShippingSelected = false;
-                vm.changedAssignments = ocAddresses.Assignments.Compare(CurrentAssignments, vm.list, $stateParams.usergroupid);
-                //select for shipping
-                break;
-            case 'billing':
-                if (!scope.address.billing) vm.allBillingSelected = false;
-                vm.changedAssignments = ocAddresses.Assignments.Compare(CurrentAssignments, vm.list, $stateParams.usergroupid);
-                //select for billing
-                break;
-            default:
-                break;
-        }
     };
 }

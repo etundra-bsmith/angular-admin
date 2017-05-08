@@ -2,7 +2,7 @@ angular.module('orderCloud')
     .controller('ProductsCtrl', ProductsController)
 ;
 
-function ProductsController($state, toastr, OrderCloud, ocParameters, ocProducts, ProductList, Parameters) {
+function ProductsController($state, toastr, OrderCloudSDK, ocParameters, ocProducts, ProductList, Parameters) {
     var vm = this;
     vm.list = ProductList;
     //Set parameters
@@ -24,12 +24,7 @@ function ProductsController($state, toastr, OrderCloud, ocParameters, ocProducts
     }
 
     function search() {
-        $state.go('.', ocParameters.Create(vm.parameters, true), {notify:false}); //don't trigger $stateChangeStart/Success, this is just so the URL will update with the search
-        vm.searchLoading = OrderCloud.Products.List(vm.parameters.search, 1, vm.parameters.pageSize, vm.parameters.searchOn, vm.parameters.sortBy, vm.parameters.filters)
-            .then(function(data) {
-                vm.list = data;
-                vm.searchResults = vm.parameters.search.length > 0;
-            })
+        vm.filter(true);
     }
 
     function clearSearch() {
@@ -57,7 +52,8 @@ function ProductsController($state, toastr, OrderCloud, ocParameters, ocProducts
     }
 
     function loadMore() {
-        return OrderCloud.Products.List(Parameters.search, vm.list.Meta.Page + 1, Parameters.pageSize || vm.list.Meta.PageSize, Parameters.searchOn, Parameters.sortBy, Parameters.filters)
+        var parameters = angular.extend(Parameters, {page:vm.list.Meta.Page + 1});
+        return OrderCloudSDK.Products.List(parameters)
             .then(function(data) {
                 vm.list.Items = vm.list.Items.concat(data.Items);
                 vm.list.Meta = data.Meta;
@@ -67,9 +63,9 @@ function ProductsController($state, toastr, OrderCloud, ocParameters, ocProducts
     vm.createProduct = function() {
         ocProducts.Create()
             .then(function(newProduct) {
-                toastr.success(newProduct.Name + ' was created.', 'Success!');
-                $state.go('productDetail', {productid: newProduct.ID});
-            })
+                toastr.success(newProduct.Name + ' was created.');
+                $state.go('product', {productid: newProduct.ID});
+            });
     };
 
     vm.deleteProduct = function(scope) {
@@ -78,8 +74,8 @@ function ProductsController($state, toastr, OrderCloud, ocParameters, ocProducts
                 vm.list.Items.splice(scope.$index, 1);
                 vm.list.Meta.TotalCount--;
                 vm.list.Meta.ItemRange[1]--;
-                toastr.success(scope.product.Name + ' was deleted.', 'Success!');
-            })
-    }
+                toastr.success(scope.product.Name + ' was deleted.');
+            });
+    };
 
 }

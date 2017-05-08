@@ -10,6 +10,9 @@ function SpendingAccountsConfig($stateProvider) {
             controller: 'SpendingAccountsCtrl',
             controllerAs: 'spendingAccounts',
             url: '/spending-accounts?search&page&pageSize&searchOn&sortBy&filters',
+            data: {
+                pageTitle: 'Buyer Spending Accounts'
+            },
             resolve: {
                 Parameters: function($stateParams, ocParameters) {
                     return ocParameters.Get($stateParams);
@@ -17,13 +20,13 @@ function SpendingAccountsConfig($stateProvider) {
                 CurrentAssignments: function($q, ocSpendingAccounts, $stateParams) {
                     return ocSpendingAccounts.Assignments.Get('company', $stateParams.buyerid);
                 },
-                SpendingAccountList: function(OrderCloud, Parameters, CurrentAssignments, ocSpendingAccounts) {
+                SpendingAccountList: function($stateParams, OrderCloudSDK, Parameters, CurrentAssignments, ocSpendingAccounts) {
                     var parameters = angular.copy(Parameters);
                     parameters.filters = angular.extend((parameters.filters || {}), {RedemptionCode: '!*'});
-                    return OrderCloud.SpendingAccounts.List(parameters.search, parameters.page, parameters.pageSize, parameters.searchOn, parameters.sortBy, parameters.filters, parameters.buyerid)
+                    return OrderCloudSDK.SpendingAccounts.List($stateParams.buyerid, parameters)
                         .then(function(data) {
                             return ocSpendingAccounts.Assignments.Map(CurrentAssignments, data);
-                        })
+                        });
                 }
             }
         })
@@ -32,6 +35,9 @@ function SpendingAccountsConfig($stateProvider) {
             controller: 'SpendingAccountsCtrl',
             controllerAs: 'spendingAccounts',
             url: '/spending-accounts?search&page&pageSize&searchOn&sortBy&filters',
+            data: {
+                pageTitle: 'User Group Spending Accounts'
+            },
             resolve: {
                 Parameters: function($stateParams, ocParameters) {
                     return ocParameters.Get($stateParams);
@@ -39,13 +45,13 @@ function SpendingAccountsConfig($stateProvider) {
                 CurrentAssignments: function($q, ocSpendingAccounts, $stateParams) {
                     return ocSpendingAccounts.Assignments.Get('group', $stateParams.buyerid, $stateParams.usergroupid);
                 },
-                SpendingAccountList: function(OrderCloud, Parameters, CurrentAssignments, ocSpendingAccounts) {
+                SpendingAccountList: function($stateParams, OrderCloudSDK, Parameters, CurrentAssignments, ocSpendingAccounts) {
                     var parameters = angular.copy(Parameters);
                     parameters.filters = angular.extend((parameters.filters || {}), {RedemptionCode: '!*'});
-                    return OrderCloud.SpendingAccounts.List(parameters.search, parameters.page, parameters.pageSize, parameters.searchOn, parameters.sortBy, parameters.filters, parameters.buyerid)
+                    return OrderCloudSDK.SpendingAccounts.List($stateParams.buyerid, parameters)
                         .then(function(data) {
                             return ocSpendingAccounts.Assignments.Map(CurrentAssignments, data);
-                        })
+                        });
                 }
             }
         })

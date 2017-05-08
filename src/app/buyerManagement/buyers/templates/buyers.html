@@ -4,7 +4,7 @@
             Buyer Organizations
         </h3>
         <!--====== CREATE ======-->
-        <div class="l-page-header__btns">
+        <div class="l-page-header__btns" oc-if-roles="BuyerAdmin">
             <button type="button" class="btn btn-primary btn-block" ng-click="buyers.createBuyer()"><i class="fa fa-plus-circle"></i>
                 New Buyer
             </button>
@@ -12,24 +12,27 @@
     </header>
 
     <!--====== SEARCH ======-->
-    <form name="BuyersSearchForm" pretty-submit>
-        <fieldset class="form-group">
-            <div class="input-group">
-                <span class="input-group-addon">
-                    <i class="fa fa-search"></i>
-                </span>
-                <input type="search" ng-change="buyers.search()" ng-model-options="{debounce:1000}" placeholder="Search buyers..." ng-model="buyers.parameters.search" class="form-control">
-                <span ng-if="buyers.searchResults" class="input-group-btn">
-                    <button class="btn btn-default" type="button" aria-label="Clear Search" ng-click="buyers.clearSearch()"><i class="fa fa-times"></i> <span class="hidden-xs">Clear Search</span></button>
-                </span>
-            </div>
-        </fieldset>
-    </form>
+    <div ng-if="buyers.list.Items.length || (!buyers.list.Items.length && buyers.searchResults)">
+        <form name="buyers.searchForm" pretty-submit>
+            <fieldset class="form-group">
+                <div class="input-group">
+                    <span class="input-group-addon">
+                        <i class="fa fa-search"></i>
+                    </span>
+                    <input type="search" ng-change="buyers.search()" ng-model-options="{debounce:1000}" placeholder="Search buyers..." ng-model="buyers.parameters.search" class="form-control">
+                    <span ng-if="buyers.searchResults" class="input-group-btn">
+                        <button class="btn btn-default" type="button" aria-label="Clear Search" ng-click="buyers.clearSearch()"><i class="fa fa-times"></i> <span class="hidden-xs">Clear Search</span></button>
+                    </span>
+                </div>
+            </fieldset>
+        </form>
+    </div>
 
     <!--====== LIST ======-->
     <div cg-busy="buyers.searchLoading">
         <div class="no-matches" ng-if="!buyers.list.Items.length">
-            <b>No matches found.</b>
+            <b ng-if="buyers.searchResults">No matches found.</b>
+            <b ng-if="!buyers.searchResults">This seller organization does not have any buyer organizations.</b>
         </div>
         <div ng-if="buyers.list.Items.length">
             <div class="row">
@@ -52,26 +55,20 @@
                     </colgroup>
                     <thead>
                     <tr>
-                        <th>
-                            <!-- Commented out until API supports sorting for buyers -->
-                            <!-- <a href="#" role="button" ng-click="buyers.updateSort('ID')"> -->
+                        <th ng-click="buyers.updateSort('ID')">
                             ID
                             <i class="fa fa-caret-down" ng-show="buyers.parameters.sortBy == 'ID'"></i>
                             <i class="fa fa-caret-up" ng-show="buyers.parameters.sortBy == '!ID'"></i>
-                            <!-- </a> -->
                         </th>
-                        <th>
-                            <!-- Commented out until API supports sorting for buyers -->
-                            <!-- <a href="#" role="button" ng-click="buyers.updateSort('Name')"> -->
+                        <th ng-click="buyers.updateSort('Name')">
                             Name
                             <i class="fa fa-caret-down" ng-show="buyers.parameters.sortBy == 'Name'"></i>
                             <i class="fa fa-caret-up" ng-show="buyers.parameters.sortBy == '!Name'"></i>
-                            <!-- </a> -->
                         </th>
                         <th>
                             Active
                         </th>
-                        <th></th>
+                        <th oc-if-roles="BuyerAdmin"></th>
                     </tr>
                     </thead>
                     <tbody>
@@ -81,21 +78,25 @@
                         <td class="text-center">
                             <i class="fa fa-circle" aria-hidden="true" ng-class="{'active':buyer.Active}"></i>
                         </td>
-                        <td>
+                        <td oc-if-roles="BuyerAdmin">
                             <button class="btn btn-danger btn-xs" ng-click="buyers.deleteBuyer(this)"><i class="fa fa-trash-o"></i> <span class="hidden-xs">Delete</span></button>
                         </td>
                     </tr>
                     </tbody>
                 </table>
             </div>
-            <div class="text-center" ng-if="application.$ocMedia('min-width:768px') && buyers.list.Meta.TotalPages > 1">
-                <uib-pagination boundary-links="buyers.list.Meta.TotalPages > 5" max-size="5"
-                                total-items="buyers.list.Meta.TotalCount" items-per-page="buyers.list.Meta.PageSize"
-                                ng-model="buyers.list.Meta.Page" ng-change="buyers.pageChanged()"></uib-pagination>
-            </div>
+            <ul uib-pagination
+                class="pagination-sm pull-right hidden-xs"
+                boundary-links="buyers.list.Meta.TotalPages > 5"
+                max-size="5"
+                total-items="buyers.list.Meta.TotalCount"
+                items-per-page="buyers.list.Meta.PageSize"
+                ng-model="buyers.list.Meta.Page"
+                ng-if="buyers.list.Meta.TotalPages > 1"
+                ng-change="buyers.pageChanged()">
+            </ul>
             <button type="button"
-                    ng-if="application.$ocMedia('max-width:767px')"
-                    class="btn btn-default btn-block btn-lg"
+                    class="btn btn-default btn-block btn-lg visible-xs"
                     ng-show="buyers.list.Meta.Page < buyers.list.Meta.TotalPages"
                     ng-click="buyers.loadMore()">Load More
             </button>

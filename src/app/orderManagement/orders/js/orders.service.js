@@ -2,13 +2,12 @@ angular.module('orderCloud')
     .factory('ocOrdersService', OrderCloudOrdersService)
 ;
 
-function OrderCloudOrdersService($q, $filter, OrderCloud) {
+function OrderCloudOrdersService($q, $filter, OrderCloudSDK) {
     var service = {
         List: _list
     };
     
     function _list(parameters) {
-        var deferred = $q.defer();
 
         function convertToDate(toDate) {
             var result = new Date(toDate);
@@ -24,26 +23,66 @@ function OrderCloudOrdersService($q, $filter, OrderCloud) {
             parameters.filters.DateSubmitted = [('<' + convertToDate(parameters.toDate))];
         }
 
-        var showSubmittedOnly = angular.extend({status: '!Unsubmitted'}, parameters.filters);
+        if (parameters.filters && parameters.FromUserGroupID) {
+            parameters.filters['xp.CustomerNumber'] = parameters.FromUserGroupID;
+        }
 
-        OrderCloud.Orders.ListIncoming(null, null, parameters.search, parameters.page, parameters.pageSize, parameters.searchOn, parameters.sortBy, showSubmittedOnly, parameters.buyerID)
-            .then(function(data) {
-                gatherBuyerCompanies(data);
+        if (parameters.filters && parameters.FromCompanyID) {
+            parameters.filters.FromCompanyID = parameters.FromCompanyID;
+        }
+
+        if (parameters.filters && parameters.status) {
+            parameters.filters.status = parameters.status;
+        }
+
+        //var filters = angular.extend({status: '!Unsubmitted'}, parameters.filters);
+
+        //TODO: uncomment when ! operator is fixed in API EX-1166
+        //angular.extend(parameters.filters, {status: '!Unsubmitted'});
+
+        return OrderCloudSDK.Orders.List('Incoming', parameters)
+            .then(function(orders) {
+                return gatherBuyerCompanies(orders);
             });
 
-        function gatherBuyerCompanies(data) {
-            var buyerIDs = _.uniq(_.pluck(data.Items, 'FromCompanyID'));
-            OrderCloud.Buyers.List(null, 1, 100, null, null, {ID: buyerIDs.join('|')})
+        function gatherBuyerCompanies(orders) {
+            var buyerIDs = _.uniq(_.pluck(orders.Items, 'FromCompanyID'));
+            var options = {
+                page: 1,
+                pageSize: 100,
+                filters: {ID: buyerIDs.join('|')}
+            };
+            return OrderCloudSDK.Buyers.List(options)
                 .then(function(buyerData) {
-                    _.map(data.Items, function(order) {
+                    var queue = [];
+                    _.each(orders.Items, function(order) {
                         order.FromCompany = _.findWhere(buyerData.Items, {ID: order.FromCompanyID});
+                        queue.push(getUserGroups(order))
                     });
-                    deferred.resolve(data);
+                    return $q.all(queue)
+                        .then(function(results){
+                            orders.Items = [].concat.apply([], results);
+                            return orders;
+                        })
                 });
+
+            function getUserGroups(order) {
+                if (order.xp && order.xp.CustomerNumber) {
+                    return OrderCloudSDK.UserGroups.Get(order.FromCompanyID, order.xp.CustomerNumber)
+                        .then(function(userGroup) {
+                            if (userGroup) {
+                                order.FromUserGroup = userGroup;
+                                order.FromUserGroupID = userGroup.ID;
+                                return order;
+                            } else {
+                                return order;
+                            }
+                        });
+                } else {
+                    return order;
+                }
+            }
         }
-        
-        return deferred.promise;
     }
-    
     return service;
 }

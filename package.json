@@ -1,8 +1,18 @@
 {
-  "name": "ordercloud-seed",
-  "version": "1.0.0",
-  "description": "A seed project for custom Four51 Solutions built on AngularJS",
-  "main": "app.module.js",
+  "name": "angular-seller-application",
+  "version": "1.0.44-staging",
+  "description": "A fully functional, open source starter application built for seller users on the OrderCloud.io platform",
+  "author": "Four51, Inc.",
+  "homepage": "https://github.com/ordercloud-api/angular-seller",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ordercloud-api/angular-seller.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ordercloud-api/angular-seller/issues"
+  },
+  "license": "MIT",
+  "main": "index",
   "engines": {
     "node": "5.6.0",
     "npm": "3.6.0"
@@ -18,10 +28,6 @@
     "build-all": "gulp inject index --gulpfile ./heroku.gulpfile.js",
     "test": "gulp test:unit"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/Four51/OrderCloud-Seed-AngularJS.git"
-  },
   "keywords": [
     "OrderCloud",
     "Four51",
@@ -29,16 +35,13 @@
     "Angular",
     "B2B"
   ],
-  "author": "Four51 Inc.",
-  "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/Four51/OrderCloud-Seed-AngularJS/issues"
-  },
-  "homepage": "https://github.com/Four51/OrderCloud-Seed-AngularJS#readme",
   "dependencies": {
+    "body-parser": "1.17.1",
     "browser-sync": "2.11.1",
+    "csvtojson": "1.1.4",
     "del": "2.2.0",
     "express": "4.13.4",
+    "express-sslify": "1.2.0",
     "fs": "0.0.2",
     "git-repo-name": "0.6.0",
     "gulp-angular-filesort": "1.1.1",
@@ -47,6 +50,7 @@
     "gulp-beautify": "2.0.0",
     "gulp-cached": "1.1.0",
     "gulp-concat": "2.6.0",
+    "gulp-concat-css": "2.3.0",
     "gulp-csso": "1.0.1",
     "gulp-filter": "3.0.1",
     "gulp-flatten": "0.2.0",
@@ -60,12 +64,15 @@
     "gulp-ng-annotate": "1.1.0",
     "gulp-ng-constant": "1.1.0",
     "gulp-nodemon": "2.0.6",
+    "gulp-replace-task": "0.11.0",
     "gulp-rev": "6.0.1",
     "gulp-sourcemaps": "1.6.0",
     "gulp-uglify": "1.5.1",
     "gulp-wrapper": "1.0.0",
     "main-bower-files": "2.11.1",
+    "q": "1.4.1",
     "require-dir": "0.3.0",
+    "underscore": "1.8.3",
     "yargs": "6.6.0"
   },
   "devDependencies": {
