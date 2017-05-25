@@ -1,7 +1,7 @@
-<form name="createProductPriceModal.form" autocomplete="off" novalidate pretty-submit>
+<form name="createProductPriceModal.form" ng-submit="createProductPriceModal.submit()" autocomplete="off" novalidate oc-pretty-submit>
     <div class="modal-header">
         <button type="button" class="close" ng-click="createProductPriceModal.cancel()" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-        <span class="text-muted">{{(createProductPriceModal.buyerName ? 'Pricing for ' : 'Default pricing for ') + (createProductPriceModal.userGroupName || createProductPriceModal.buyerName)}}</span>
+        <span class="text-muted">{{(createProductPriceModal.buyerName ? 'Create pricing for ' : 'Default pricing for ') + (createProductPriceModal.userGroupName || createProductPriceModal.buyerName)}}</span>
         <h4 class="modal-title">Product: <b>{{createProductPriceModal.product.Name}}</b></h4>
     </div>
     <div class="modal-body">
@@ -9,7 +9,7 @@
             <fieldset class="form-group" ng-if="createProductPriceModal.buyerName">
                 <label for="ID" class="col-sm-3 control-label">Price ID</label>
                 <div class="col-sm-9">
-                    <input id="ID" name="ID" type="text" placeholder="(Optional)" class="form-control" ng-model="createProductPriceModal.priceSchedule.ID"/>
+                    <input id="ID" name="ID" type="text" placeholder="(Optional)" class="form-control" pattern="([A-Za-z0-9\-\_]+)" pattern-err-type="ID_Name" ng-model="createProductPriceModal.priceSchedule.ID"/>
                 </div>
             </fieldset>
             <fieldset class="form-group" ng-if="createProductPriceModal.buyerName">
@@ -73,6 +73,6 @@
         <oc-price-breaks priceschedule="createProductPriceModal.priceSchedule"></oc-price-breaks>
     </div>
     <div class="modal-footer">
-        <button class="btn btn-primary btn-block" ng-disabled="createProductPriceModal.form.$invalid || !createProductPriceModal.priceSchedule.PriceBreaks.length" ng-click="createProductPriceModal.submit()" cg-busy="createProductPriceModal.loading">Save Selection</button>
+        <button type="submit" class="btn btn-primary btn-block" ng-disabled="createProductPriceModal.form.$invalid || !createProductPriceModal.priceSchedule.PriceBreaks.length" cg-busy="createProductPriceModal.loading">Save Selection</button>
     </div>
 </form>
