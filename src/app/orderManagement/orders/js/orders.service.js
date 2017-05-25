@@ -22,7 +22,7 @@ function OrderCloudOrdersService($q, $filter, OrderCloudSDK) {
         } else if (!parameters.fromDate && parameters.toDate) {
             parameters.filters.DateSubmitted = [('<' + convertToDate(parameters.toDate))];
         }
-
+        
         if (parameters.filters && parameters.FromUserGroupID) {
             parameters.filters['xp.CustomerNumber'] = parameters.FromUserGroupID;
         }
@@ -37,7 +37,9 @@ function OrderCloudOrdersService($q, $filter, OrderCloudSDK) {
 
         //var filters = angular.extend({status: '!Unsubmitted'}, parameters.filters);
 
-        //TODO: uncomment when ! operator is fixed in API EX-1166
+
+        //TODO: uncomment & replace line below when ! operator is fixed in API EX-1166
+        if (!parameters.filters.status) parameters.filters.status = 'Open|AwaitingApproval|Completed|Declined|Cancelled';
         //angular.extend(parameters.filters, {status: '!Unsubmitted'});
 
         return OrderCloudSDK.Orders.List('Incoming', parameters)
