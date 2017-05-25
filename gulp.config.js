@@ -91,23 +91,18 @@ function getConstants() {
         case 'local':
             result.authurl = 'http://core.four51.com:11629';
             result.apiurl = 'http://core.four51.com:9002';
-            result.devapiurl = 'http://localhost:7203/api';
             break;
         case 'qa':
             result.authurl = 'https://qaauth.ordercloud.io';
             result.apiurl = 'https://qaapi.ordercloud.io';
-            result.devapiurl = 'http://localhost:7203/api';
             break;
         case 'staging':
             result.authurl = 'https://stagingauth.ordercloud.io';
             result.apiurl = 'https://stagingapi.ordercloud.io';
-            result.devapiurl = 'http://localhost:7203/api';
             break;
         default:
             result.authurl = 'https://auth.ordercloud.io';
             result.apiurl = 'https://api.ordercloud.io';
-            //result.devapiurl = 'https://cups-admin.herokuapp.com/api';
-            result.devapiurl = 'http://localhost:7203/api';
             break;
     }
     if (process.env.apiurl && process.env.authurl) {
@@ -122,14 +117,12 @@ function getConstants() {
     if (process.env.appname) result.appname = process.env.appname;
     if (process.env.scope) result.scope = process.env.scope;
     if (process.env.ocscope) result.ocscope = process.env.ocscope;
-
-    if (process.env.buyerid) result.buyerid = process.env.buyerid;
-    if (process.env.catalogid) result.catalogid = process.env.catalogid;
-    if (process.env.devapiurl) result.devapiurl = process.env.devapiurl;
-
     if (process.env.html5mode) result.html5mode = process.env.html5mode;
     if (process.env.bootswatchtheme) result.bootswatchtheme = process.env.bootswatchtheme;
-
+    if (process.env.awsaccesskeyid) result.awsaccesskeyid = process.env.awsaccesskeyid;
+    if (process.env.awssecretaccesskey) result.awssecretaccesskey = process.env.awssecretaccesskey;
+    if (process.env.awsregion) result.awsregion = process.env.awsregion;
+    if (process.env.awsbucket) result.awsbucket = process.env.awsbucket;
     return result;
 }
 
