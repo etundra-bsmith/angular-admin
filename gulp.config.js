@@ -101,7 +101,7 @@ function getConstants() {
         default:
             result.authurl = 'https://auth.ordercloud.io';
             result.apiurl = 'https://api.ordercloud.io';
-            result.devapiurl = 'http://localhost:7203/api'; //TODO: replace this with deployed app url
+            result.devapiurl = 'https://cafe-rio-admin.herokuapp.com/api';
             break;
     }
     if (process.env.apiurl && process.env.authurl) {
