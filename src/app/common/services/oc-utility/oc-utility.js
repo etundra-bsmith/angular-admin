@@ -5,7 +5,8 @@ angular.module('orderCloud')
 function ocUtilityService($q, $localForage, $exceptionHandler, appname){
     var service = {
         GetCache: _getCache,
-        ListAll: _listAll
+        ListAll: _listAll,
+        ExecuteRecursively: _executeRecursively
     };
 
     function _getCache(cacheKey, onCacheEmpty, lastUpdatedTimeStamp){
@@ -88,6 +89,17 @@ function ocUtilityService($q, $localForage, $exceptionHandler, appname){
                         $exceptionHandler(ex);
                     });
             });
+    }
+
+    function _executeRecursively(fn, iteratee){
+        function execute(){
+            var args = iteratee.shift();
+            return fn.call(null, args)
+                .then(function(){
+                    return iteratee.length ? execute() : null;
+                });
+        }
+        return execute();
     }
 
     return service;

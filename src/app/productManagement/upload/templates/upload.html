@@ -75,7 +75,8 @@
                     </div>
                     <!--UPLOAD CONTENT-->
                     <div class="form-group" ng-if="!upload.parsedProdData.ProductIssues.length && !upload.parsedCatData.CategoryIssues.length">
-                        <button type="button" class="btn btn-primary btn-block" ng-disabled="!upload.parsedCatData.Categories.length || !upload.parsedProdData.Products.length || upload.parsedCatData.CategoryIssues.length || upload.parsedProdData.ProductIssues.length" ng-click="upload.upload()">Upload</button>
+                        <button type="button" class="btn btn-primary btn-block" ng-disabled="!upload.parsedCatData.Categories.length || !upload.parsedProdData.Products.length || upload.parsedCatData.CategoryIssues.length || upload.parsedProdData.ProductIssues.length" ng-click="upload.uploadProducts()">Upload Products</button>
+                        <button type="button" class="btn btn-primary btn-block" ng-disabled="!upload.parsedCatData.Categories.length || !upload.parsedProdData.Products.length || upload.parsedCatData.CategoryIssues.length || upload.parsedProdData.ProductIssues.length" ng-click="upload.uploadCategories()">Upload Categories </button>
                     </div>
                 </div>
                 <div class="panel panel-default" ng-if="upload.started">
