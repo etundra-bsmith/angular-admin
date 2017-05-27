@@ -7,7 +7,6 @@ function UploadService($q, $resource, devapiurl) {
         Parse: _parse,
         ReadFiles: _readFiles,
         BuildXpObj: _buildXpObj,
-        IsValid: _isValid,
         IsNumber: _isNumber
     };
 
@@ -96,11 +95,6 @@ function UploadService($q, $resource, devapiurl) {
             }
         }
     }
-
-    function _isValid(str) {
-        return !/[~`!#$%\^&*+=\\[\]\\';.,/{}|\\":<>\?]/g.test(str);
-    }
-
 
     function _isNumber(n) {
         return !isNaN(parseFloat(n)) && isFinite(n);
