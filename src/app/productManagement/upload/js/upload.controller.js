@@ -113,16 +113,36 @@ function UploadController($scope, UploadService, ProductUploadService) {
             });
     }
 
-    vm.upload = function() {
+    vm.uploadProducts = function() {
+        vm.results = null;
+        vm.uploadProgress = [];
+        var products = angular.copy(vm.parsedProdData.Products);
+        vm.parsedData = null;
+        vm.started = true;
+        ProductUploadService.UploadProducts(products)
+            .then(
+                function(data) {
+                    vm.results = data;
+                },
+                function(ex) {
+                    console.log(ex);
+                },
+                function(progress) {
+                    vm.uploadProgress = progress;
+                }
+            );
+    };
+
+    vm.uploadCategories = function(){
         vm.results = null;
         vm.uploadProgress = [];
         var products = angular.copy(vm.parsedProdData.Products);
         var categories = angular.copy(vm.parsedCatData.Categories);
         vm.parsedData = null;
         vm.started = true;
-        ProductUploadService.Upload(products, categories)
-            .then(
-                function(data) {
+
+        ProductUploadService.UploadCategories(products, categories)
+            .then(function(data) {
                     vm.results = data;
                 },
                 function(ex) {
