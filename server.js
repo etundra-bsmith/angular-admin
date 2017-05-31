@@ -15,23 +15,17 @@ app.use(function (req, res, next) {
     next();
 });
 
-if (process.env.NODE_ENV == 'production' || process.env.NODE_ENV == 'prod') {
-    app.use(enforce.HTTPS({trustProtoHeader: true}))
-}
-
 app.use(bodyParser.json({limit: '50mb'}));
 
 app.use('/api/*', require('./middleware/middleware'));
 app.use('/api/upload', require('./routes/upload'));
 
-//switch(env) {
     if (env.toLowerCase().includes('prod')) {
         console.log('*** PROD ***');
         app.use(express.static(config.root + config.compile.replace('.', '')));
         app.get('/*', function(req, res) {
             res.sendFile(config.root + config.compile.replace('.', '') + 'index.html');
         });
-        //break;
     }
     else {
         console.log('*** DEV ***');
@@ -44,9 +38,7 @@ app.use('/api/upload', require('./routes/upload'));
         app.get('/*', function(req, res) {
             res.sendFile(config.root + config.build.replace('.', '') + 'index.html');
         });
-        //break;
     }
-//}
 
 app.listen(port);
 console.log('Listening on port ' + port + '...');
