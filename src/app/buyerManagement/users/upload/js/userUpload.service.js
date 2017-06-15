@@ -267,7 +267,7 @@ function UserUploadService($q, OrderCloudSDK, UploadService, toastr) {
 
         function validateSingleUser(user) {
             var userData = {
-                ID: user[mapping.ID],
+                ID: user[mapping.ID].replace(/[^\w\s-,.]/gi, ''),
                 Username: user[mapping.Username],
                 FirstName: user[mapping.FirstName],
                 LastName: user[mapping.LastName],
@@ -284,13 +284,6 @@ function UserUploadService($q, OrderCloudSDK, UploadService, toastr) {
                     ID: userData.ID,
                     Username: userData.Username,
                     Issue: 'User: ' + userData.Username + ' does not have an ID'
-                });
-            }
-            if (!UploadService.IsValid(userData.ID)) {
-                result.UserIssues.push({
-                    ID: userData.ID,
-                    Username: userData.Username,
-                    Issue: 'User: ' + userData.Username + ' has special characters'
                 });
             }
             if(!userData.Username) {
@@ -315,7 +308,7 @@ function UserUploadService($q, OrderCloudSDK, UploadService, toastr) {
 
         function validateSingleGroup(group) {
             var userGroupData = {
-                ID: group[mapping.ID],
+                ID: group[mapping.ID].replace(/[^\w\s-,.]/gi, ''),
                 Name: group[mapping.Name]
             };
 
@@ -325,12 +318,6 @@ function UserUploadService($q, OrderCloudSDK, UploadService, toastr) {
                 result.UserGroupIssues.push({
                     ID: userGroupData.ID,
                     Issue: 'User Group: ' + userGroupData.Name + ' does not have an ID'
-                });
-            }
-            if (!UploadService.IsValid(userGroupData.ID)) {
-                result.UserGroupIssues.push({
-                    ID: userGroupData.ID,
-                    Issue: 'User Group: ' + userGroupData.Name + ' has an invalid ID'
                 });
             }
         }
@@ -348,7 +335,7 @@ function UserUploadService($q, OrderCloudSDK, UploadService, toastr) {
 
         function validateSingleAddress(address) {
             var addressData = {
-                ID: address[mapping.ID],
+                ID: address[mapping.ID].replace(/[^\w\s-,.]/gi, ''),
                 CompanyName: address[mapping.CompanyName],
                 Street1: address[mapping.Street1],
                 Street2: address[mapping.Street2],
@@ -362,13 +349,6 @@ function UserUploadService($q, OrderCloudSDK, UploadService, toastr) {
 
             result.Address.push(addressData);
 
-            if (!UploadService.IsValid(addressData.ID)) {
-                result.AddressIssues.push({
-                    CompanyName: addressData.CompanyName,
-                    ID: addressData.ID,
-                    Issues: 'Address: ' + addressData.CompanyName + ' has an invalid ID'
-                });
-            }
             if(!addressData.Street1) {
                 result.AddressIssues.push({
                     CompanyName: addressData.CompanyName,
