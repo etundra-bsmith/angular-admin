@@ -25,7 +25,7 @@ function ProductUploadService($q, ocUtility, OrderCloudSDK, catalogid, UploadSer
 
         function createPriceSchedules() {
             progress.push({Message: 'Upload Price Schedules', Total: productCount, SuccessCount: 0, ErrorCount: 0});
-            return ocUtility.ExecuteRecursively(createPriceSchedule, angular.copy(products))
+            return ocUtility.ExecuteRecursively(createPriceSchedule, angular.copy(products), 500)
                 .then(function(){
                     return createProducts();
                 });
@@ -59,18 +59,20 @@ function ProductUploadService($q, ocUtility, OrderCloudSDK, catalogid, UploadSer
             progress.push({Message: 'Upload Products', Total: productCount, SuccessCount: 0, ErrorCount: 0});
             deferred.notify(progress);
 
-            return ocUtility.ExecuteRecursively(createProduct, angular.copy(products))
+            return ocUtility.ExecuteRecursively(createProduct, angular.copy(products), 500)
                 .then(function(){
                     return finish();
                 });
 
             function createProduct(product){
                 if(!product.xp) product.xp = {};
+                if(!product.xp.image) product.xp.image = {};
+                if(!product.xp.image.URL) product.xp.image.URL = null;
                 var p = {
                     ID: product.ID,
                     Name: product.Name.replace(/[^\w\s-,.]/gi, ''),
                     DefaultPriceScheduleID: product.ID,
-                    Description: product.Description.replace(/[^\w\s-,.]/gi, ''),
+                    Description: product.Description ? product.Description.replace(/[^\w\s-,.]/gi, '') : null,
                     QuantityMultiplier: product.QuantityMultiplier || 1,
                     Active: true,
                     ShipFromAddressID: product.ShipFromAddressID,
@@ -79,7 +81,7 @@ function ProductUploadService($q, ocUtility, OrderCloudSDK, catalogid, UploadSer
                         image: {
                             URL: product.xp.image.URL
                         },
-                        description_short: product.xp.description_short.replace(/[^\w\s-,.]/gi, ''),
+                        description_short: product.xp.description_short ? product.xp.description_short.replace(/[^\w\s-,.]/gi, '') : null,
                         attributes: product.xp.attributes
                     }
                 };
@@ -91,8 +93,15 @@ function ProductUploadService($q, ocUtility, OrderCloudSDK, catalogid, UploadSer
                         deferred.notify(progress);
                     })
                     .catch(function(ex) {
-                        var e = ex.response.body.Errors[0];
-                        results.FailedProducts.push({ProductID: p.ID, Error: e.Message});
+                        try {
+                            var e = ex.response.body.Errors[0];
+                            results.FailedProducts.push({ProductID: p.ID, Error: e.Message});
+                        } catch(e){
+                            console.log(ex);
+                            console.log(e);
+                            results.FailedProducts.push({ProductID: p.ID});
+                        }
+                        
                         progress[progress.length - 1].ErrorCount++;
                         deferred.notify(progress);
                     });
@@ -123,7 +132,7 @@ function ProductUploadService($q, ocUtility, OrderCloudSDK, catalogid, UploadSer
             progress.push({Message: 'Creating Categories', Total: categoryCount, SuccessCount: 0, ErrorCount: 0});
             deferred.notify(progress);
 
-            return ocUtility.ExecuteRecursively(createCategory, angular.copy(categories))
+            return ocUtility.ExecuteRecursively(createCategory, angular.copy(categories), 500)
                 .then(function(){
                     categories = successfulCats;
                     categoryCount = categories.length;
@@ -143,7 +152,17 @@ function ProductUploadService($q, ocUtility, OrderCloudSDK, catalogid, UploadSer
                         successfulCats.push(category);
                     })
                     .catch(function(ex) {
-                        results.FailedCategories.push({CategoryID: cat.ID, Error: {ErrorCode: ex.data.Errors[0].ErrorCode, Message: ex.data.Errors[0].Message}});
+                        var code;
+                        var message;
+                        try {
+                            code = ex.Errors[0].ErrorCode;
+                            message = ex.Erros[0].Message;
+                        } catch(e) {
+                            console.log(e);
+                            code = '';
+                            message = '';
+                        }
+                        results.FailedCategories.push({CategoryID: cat.ID, Error: {ErrorCode: code, Message: message}});
                         progress[progress.length - 1].ErrorCount++;
                         deferred.notify(progress);
                     });
@@ -152,7 +171,7 @@ function ProductUploadService($q, ocUtility, OrderCloudSDK, catalogid, UploadSer
 
         function setParentIDs() {
 
-            return ocUtility.ExecuteRecursively(setParentID, angular.copy(categories))
+            return ocUtility.ExecuteRecursively(setParentID, angular.copy(categories), 500)
                 .then(function(){
                     return buildCategoryAssignmentQueue();
                 });
@@ -191,7 +210,7 @@ function ProductUploadService($q, ocUtility, OrderCloudSDK, catalogid, UploadSer
             progress.push({Message: 'Assign Products to Categories', Total: categoryAssignments.length, SuccessCount: 0, ErrorCount: 0});
             deferred.notify(progress);
 
-            return ocUtility.ExecuteRecursively(makeProductCategoryAssignment, angular.copy(categoryAssignments))
+            return ocUtility.ExecuteRecursively(makeProductCategoryAssignment, angular.copy(categoryAssignments), 500)
                 .then(function(){
                     return finish();
                 });
@@ -205,7 +224,17 @@ function ProductUploadService($q, ocUtility, OrderCloudSDK, catalogid, UploadSer
                     .catch(function(ex) {
                         progress[progress.length - 1].ErrorCount++;
                         deferred.notify(progress);
-                        results.FailedCategoryAssignments.push({CategoryID: categoryAssignment.CategoryID, ProductID: categoryAssignment.ProductID, Error: {Code: ex.data.Errors[0].ErrorCode, Message: ex.data.Errors[0].Message}});
+                        var code;
+                        var message;
+                        try {
+                            code = ex.Errors[0].ErrorCode;
+                            message = ex.Errors[0].Message;
+                        } catch(e) {
+                            console.log(e);
+                            code = 'null';
+                            message = 'null';
+                        }
+                        results.FailedCategoryAssignments.push({CategoryID: categoryAssignment.CategoryID, ProductID: categoryAssignment.ProductID, Error: {Code: code, Message: message}});
                     });
             }
         }
