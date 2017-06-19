@@ -91,10 +91,14 @@ function ocUtilityService($q, $localForage, $exceptionHandler, appname){
             });
     }
 
-    function _executeRecursively(fn, iteratee){
+    function _executeRecursively(fn, iteratee, chunkSize){
         function execute(){
-            var args = iteratee.shift();
-            return fn.call(null, args)
+            var queue = [];
+            var chunk = iteratee.splice(0, chunkSize);
+            _.each(chunk, function(args){
+                queue.push(fn.call(null, args));
+            });
+            return $q.all(queue)
                 .then(function(){
                     return iteratee.length ? execute() : null;
                 });
@@ -104,5 +108,3 @@ function ocUtilityService($q, $localForage, $exceptionHandler, appname){
 
     return service;
 }
-
-
