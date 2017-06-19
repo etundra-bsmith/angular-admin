@@ -40,7 +40,7 @@ function OrderCloudOrdersService($q, $filter, OrderCloudSDK) {
 
 
         //TODO: uncomment & replace line below when ! operator is fixed in API EX-1166
-        parameters.filters = {Status: 'Open|AwaitingApproval|Completed|Declined'};
+        parameters.filters = {Status: 'Open|AwaitingApproval|Canceled|Completed|Declined'};
         //TODO: Cancelled not working as a filter
         //parameters.filters = {Status: 'Open|AwaitingApproval|Completed|Cancelled|Declined'};
         //angular.extend(parameters.filters, {status: '!Unsubmitted'});
