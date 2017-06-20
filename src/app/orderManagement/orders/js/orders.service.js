@@ -36,13 +36,8 @@ function OrderCloudOrdersService($q, $filter, OrderCloudSDK) {
             angular.extend(parameters.filters, {Status: parameters.status});
         }
 
-        //var filters = angular.extend({status: '!Unsubmitted'}, parameters.filters);
-
-
         //TODO: uncomment & replace line below when ! operator is fixed in API EX-1166
         parameters.filters = {Status: 'Open|AwaitingApproval|Canceled|Completed|Declined'};
-        //TODO: Cancelled not working as a filter
-        //parameters.filters = {Status: 'Open|AwaitingApproval|Completed|Cancelled|Declined'};
         //angular.extend(parameters.filters, {status: '!Unsubmitted'});
 
         return OrderCloudSDK.Orders.List('Incoming', parameters)
@@ -91,7 +86,6 @@ function OrderCloudOrdersService($q, $filter, OrderCloudSDK) {
         }
 
         function getAddress(userGroupID) {
-            // var buyerIDs = _.pluck(buyers.Items, 'ID');
             var addressQueue = [];
             _.each(_.pluck(buyers.Items, 'ID'), function(buyerID) {
                 var parameters = {
