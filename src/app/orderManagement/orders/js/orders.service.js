@@ -7,7 +7,7 @@ function OrderCloudOrdersService($q, $filter, OrderCloudSDK) {
         List: _list
     };
     
-    function _list(parameters) {
+    function _list(parameters, buyers) {
 
         function convertToDate(toDate) {
             var result = new Date(toDate);
@@ -24,7 +24,8 @@ function OrderCloudOrdersService($q, $filter, OrderCloudSDK) {
         }
         
         if (parameters.filters && parameters.FromUserGroupID) {
-            parameters.filters['xp.CustomerNumber'] = parameters.FromUserGroupID;
+            return getAddress(parameters.FromUserGroupID)
+            // parameters.filters['xp.CustomerNumber'] = parameters.FromUserGroupID;
         }
 
         if (parameters.filters && parameters.FromCompanyID) {
@@ -32,14 +33,11 @@ function OrderCloudOrdersService($q, $filter, OrderCloudSDK) {
         }
 
         if (parameters.filters && parameters.status) {
-            parameters.filters.status = parameters.status;
+            angular.extend(parameters.filters, {Status: parameters.status});
         }
 
-        //var filters = angular.extend({status: '!Unsubmitted'}, parameters.filters);
-
-
         //TODO: uncomment & replace line below when ! operator is fixed in API EX-1166
-        if (!parameters.filters.status) parameters.filters.status = 'Open|AwaitingApproval|Completed|Declined|Cancelled';
+        parameters.filters = {Status: 'Open|AwaitingApproval|Canceled|Completed|Declined'};
         //angular.extend(parameters.filters, {status: '!Unsubmitted'});
 
         return OrderCloudSDK.Orders.List('Incoming', parameters)
@@ -75,6 +73,7 @@ function OrderCloudOrdersService($q, $filter, OrderCloudSDK) {
                             if (userGroup) {
                                 order.FromUserGroup = userGroup;
                                 order.FromUserGroupID = userGroup.ID;
+                                
                                 return order;
                             } else {
                                 return order;
@@ -84,6 +83,30 @@ function OrderCloudOrdersService($q, $filter, OrderCloudSDK) {
                     return order;
                 }
             }
+        }
+
+        function getAddress(userGroupID) {
+            var addressQueue = [];
+            _.each(_.pluck(buyers.Items, 'ID'), function(buyerID) {
+                var parameters = {
+                    filters: {
+                        CompanyName: userGroupID
+                    }
+                }
+                addressQueue.push(OrderCloudSDK.Addresses.List(buyerID, parameters));
+            });
+            return $q.all(addressQueue)
+                .then(function(results) {
+                    var addresses = [].concat.apply([], _.pluck(results, 'Items'));
+                    delete parameters.FromUserGroupID
+                    angular.extend(parameters.filters, {
+                        ShippingAddressID: _.pluck(addresses, 'ID').join('|')
+                    })
+                    return OrderCloudSDK.Orders.List('Incoming', parameters)
+                        .then(function(orders) {
+                            return gatherBuyerCompanies(orders);
+                        });
+                })
         }
     }
     return service;
