@@ -27,22 +27,21 @@ function OrdersConfig($stateProvider) {
                 OrderList: function (ocOrdersService, Parameters, BuyerCompanies) {
                     return ocOrdersService.List(Parameters, BuyerCompanies);
                 },
-                UserGroupsList: function ($q, OrderCloudSDK, Parameters, BuyerCompanies) {
+                UserGroupsList: function ($q, OrderCloudSDK, Parameters, BuyerCompanies, ocUtility) {
                     var queue = [];
+                    var userGroups = []
                     _.each(BuyerCompanies.Items, function (buyer) {
                         var parameters = {
+                            page: 'page',
                             pageSize: 100
                         };
-                        queue.push(function () {
-                            return OrderCloudSDK.UserGroups.List(buyer.ID, parameters)
-                                .then(function (data) {
-                                    return data.Items;
-                                });
-                        }());
+                        queue.push(ocUtility.ListAll(OrderCloudSDK.UserGroups.List, buyer.ID, parameters));
                     });
                     return $q.all(queue)
                         .then(function (results) {
-                            var userGroups = [].concat.apply([], results);
+                            _.each(results, function(result) {
+                                userGroups = [].concat(userGroups, result.Items);
+                            })
                             return userGroups;
                         })
                 }

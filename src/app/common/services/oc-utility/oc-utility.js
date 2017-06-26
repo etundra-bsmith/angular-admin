@@ -65,7 +65,7 @@ function ocUtilityService($q, $localForage, $exceptionHandler, appname){
         var listItems;
         filterObj.page = 1;
         filterObj.pageSize = 100;
-        args.splice(filterObj); //set page to 1
+        args.push(filterObj); //set page to 1
 
         return ListFn.apply(null, args)
             .then(function (data) {
