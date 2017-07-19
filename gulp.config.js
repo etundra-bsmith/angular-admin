@@ -96,12 +96,12 @@ function getConstants() {
         case 'qa':
             result.authurl = 'https://qaauth.ordercloud.io';
             result.apiurl = 'https://qaapi.ordercloud.io';
-            result.devapiurl = 'https://caferioadmin.herokuapp.com/';
+            result.devapiurl = 'https://caferioadmin.herokuapp.com';
             break;
         default:
             result.authurl = 'https://auth.ordercloud.io';
             result.apiurl = 'https://api.ordercloud.io';
-            result.devapiurl = 'https://caferioadmin.herokuapp.com/';
+            result.devapiurl = 'https://caferioadmin.herokuapp.com';
             break;
     }
     if (process.env.apiurl && process.env.authurl) {
