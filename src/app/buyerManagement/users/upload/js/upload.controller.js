@@ -108,7 +108,7 @@ function UserUploadController($scope, SelectedBuyer, UploadService, UserUploadSe
                 };
                 var userGroupMapping = {
                     "ID": "id",
-                    "Name": "name"
+                    "Name": "Name"
                 };
                 var addressMapping = {
                     "ID": "address_id",
