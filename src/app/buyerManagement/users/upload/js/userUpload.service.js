@@ -2,7 +2,7 @@ angular.module('orderCloud')
     .factory('UserUploadService', UserUploadService)
 ;
 
-function UserUploadService($q, OrderCloudSDK, UploadService, toastr) {
+function UserUploadService($q, OrderCloudSDK, UploadService, toastr, $exceptionHandler) {
     var service = {
         UploadUsers: _uploadUsers,
         ValidateUsers: _validateUsers,
@@ -61,10 +61,12 @@ function UserUploadService($q, OrderCloudSDK, UploadService, toastr) {
                             successfulUsers.push(userBody);
                         })
                         .catch(function(ex) {
+                            var e = null;
+                            if(ex && ex.response && ex.response.body && ex.response.body.Errors && ex.response.body.Errors.length) e = ex.response.body.Errors[0].Message;
+                            e ? results.FailedUsers.push({UserID: userBody.ID, Error: {ErrorCode: e}}) : console.log(ex);
+                            $exceptionHandler(e ? e : ex);
                             progress[progress.length - 1].ErrorCount++;
                             deferred.notify(progress);
-                            toastr.error(userBody.Username + ex.response.body.Errors[0].Message, 'Error');
-                            results.FailedUsers.push({UserID: userBody.ID, Error: {ErrorCode: ex.data.Errors[0].ErrorCode, Message: ex.data.Errors[0].Message}})
                         });
                 }) ());
             });
@@ -101,13 +103,18 @@ function UserUploadService($q, OrderCloudSDK, UploadService, toastr) {
                                         deferred.notify(progress);
                                     })
                                     .catch(function(ex){
+                                        var e = null;
+                                        if(ex && ex.response && ex.response.body && ex.response.body.Errors && ex.response.body.Errors.length) e = ex.response.body.Errors[0].Message;
                                         progress[progress.length - 1].ErrorCount++;
                                         deferred.notify(progress);
-                                        toastr.error(userGroupBody.ID + ex.response.body.Errors[0].Message, 'Error');
-                                        results.FailedUserGroups.push({UserGroupID: userGroupBody.ID, Error: {ErrorCode: ex.data.Errors[0].ErrorCode, Message: ex.data.Errors[0].Message}});
-                                    })
+                                        console.log(e ? e : ex);
+                                        results.FailedUserGroups.push({UserGroupID: userGroupBody.ID, Error: {ErrorCode: e}});
+                                    });
                             } else {
+                                var e = null;
+                                if(ex && ex.response && ex.response.body && ex.response.body.Errors && ex.response.body.Errors.length) e = ex.response.body.Errors[0].Message;
                                 results.FailedUserGroups.push({UserGroupID: userGroupBody.ID, Error: {ErrorCode: ex.data.Errors[0].ErrorCode, Message: ex.data.Errors[0].Message}});
+                                console.log(e ? e : ex);
                                 progress[progress.length - 1].ErrorCount++;
                                 deferred.notify(progress);
                             }
@@ -175,7 +182,7 @@ function UserUploadService($q, OrderCloudSDK, UploadService, toastr) {
                     City: address.City,
                     State: address.State,
                     Zip: address.Zip,
-                    Country: address.Country,
+                    Country: 'US',
                     Phone: address.Phone,
                     AddressName: address.AddressName
                 };
