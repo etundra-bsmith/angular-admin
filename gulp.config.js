@@ -91,7 +91,7 @@ function getConstants() {
         case 'local':
             result.authurl = 'http://core.four51.com:11629';
             result.apiurl = 'http://core.four51.com:9002';
-            result.devapiurl = 'http://localhost:7203/api';
+            result.devapiurl = 'http://localhost:3000/api';
             break;
         case 'qa':
             result.authurl = 'https://qaauth.ordercloud.io';
