@@ -122,6 +122,7 @@ function getConstants() {
     if (process.env.awssecretaccesskey) result.awssecretaccesskey = process.env.awssecretaccesskey;
     if (process.env.awsregion) result.awsregion = process.env.awsregion;
     if (process.env.awsbucket) result.awsbucket = process.env.awsbucket;
+    if (process.env.devapiurl) result.devapiurl = process.env.devapiurl;
     return result;
 }
 
