@@ -91,17 +91,17 @@ function getConstants() {
         case 'local':
             result.authurl = 'http://core.four51.com:11629';
             result.apiurl = 'http://core.four51.com:9002';
-            result.devapiurl = 'http://localhost:7203/api';
+            result.devapiurl = 'http://localhost:3000/api';
             break;
         case 'qa':
             result.authurl = 'https://qaauth.ordercloud.io';
             result.apiurl = 'https://qaapi.ordercloud.io';
-            result.devapiurl = 'https://caferioadmin.herokuapp.com/api';
+            result.devapiurl = 'http://localhost:3000/api';
             break;
         default:
             result.authurl = 'https://auth.ordercloud.io';
             result.apiurl = 'https://api.ordercloud.io';
-            result.devapiurl = 'https://caferioadmin.herokuapp.com/api';
+            result.devapiurl = 'https://cafe-rio-admin.herokuapp.com/api';
             break;
     }
     if (process.env.apiurl && process.env.authurl) {
