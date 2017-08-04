@@ -2,7 +2,7 @@ angular.module('orderCloud')
     .factory('UserUploadService', UserUploadService)
 ;
 
-function UserUploadService($q, OrderCloudSDK, UploadService, toastr) {
+function UserUploadService($q, OrderCloudSDK, UploadService, toastr, $exceptionHandler) {
     var service = {
         UploadUsers: _uploadUsers,
         ValidateUsers: _validateUsers,
@@ -61,12 +61,16 @@ function UserUploadService($q, OrderCloudSDK, UploadService, toastr) {
                             successfulUsers.push(userBody);
                         })
                         .catch(function(ex) {
+                            var e = _getErrorMessage(ex);
+                            var displayError = {UserID: userBody.ID, Error: e};
+
+                            console.log(displayError);
+                            results.FailedUsers.push(displayError);
+
                             progress[progress.length - 1].ErrorCount++;
                             deferred.notify(progress);
-                            toastr.error(userBody.Username + ex.response.body.Errors[0].Message, 'Error');
-                            results.FailedUsers.push({UserID: userBody.ID, Error: {ErrorCode: ex.data.Errors[0].ErrorCode, Message: ex.data.Errors[0].Message}})
                         });
-                }) ());
+                })());
             });
 
             $q.all(userQueue)
@@ -74,7 +78,7 @@ function UserUploadService($q, OrderCloudSDK, UploadService, toastr) {
                     users = successfulUsers;
                     userCount = users.length;
                     createUserGroups();
-                })
+                });
         }
 
         function createUserGroups() {
@@ -94,6 +98,8 @@ function UserUploadService($q, OrderCloudSDK, UploadService, toastr) {
                             deferred.notify(progress);
                         })
                         .catch(function(ex) {
+                            //this is handling an API bug around UserGroups where update
+                            //returns an error if user group doesn't exist
                             if(ex.status === 404) {
                                 return OrderCloudSDK.UserGroups.Create(buyer.ID, userGroupBody)
                                     .then(function() {
@@ -101,13 +107,22 @@ function UserUploadService($q, OrderCloudSDK, UploadService, toastr) {
                                         deferred.notify(progress);
                                     })
                                     .catch(function(ex){
+                                        var e = _getErrorMessage(ex);
+                                        var displayError = {UserGroupID: userGroupBody.ID, Error: e};
+
+                                        console.log(displayError);
+                                        results.FailedUserGroups.push(displayError);
+
                                         progress[progress.length - 1].ErrorCount++;
                                         deferred.notify(progress);
-                                        toastr.error(userGroupBody.ID + ex.response.body.Errors[0].Message, 'Error');
-                                        results.FailedUserGroups.push({UserGroupID: userGroupBody.ID, Error: {ErrorCode: ex.data.Errors[0].ErrorCode, Message: ex.data.Errors[0].Message}});
-                                    })
+                                    });
                             } else {
-                                results.FailedUserGroups.push({UserGroupID: userGroupBody.ID, Error: {ErrorCode: ex.data.Errors[0].ErrorCode, Message: ex.data.Errors[0].Message}});
+                                var e = _getErrorMessage(ex);
+                                var displayError = {UserGroupID: userGroupBody.ID, Error: e};
+
+                                console.log(displayError);
+                                results.FailedUserGroups.push(displayError);
+
                                 progress[progress.length - 1].ErrorCount++;
                                 deferred.notify(progress);
                             }
@@ -120,7 +135,7 @@ function UserUploadService($q, OrderCloudSDK, UploadService, toastr) {
                     successfulUserGroups = userGroups.UserGroups;
                     userGroupCount = userGroups.UserGroups.length;
                     saveUserAssignment(successfulUsers, userGroups);
-                })
+                });
         }
 
         function saveUserAssignment(users, groups) {
@@ -128,8 +143,9 @@ function UserUploadService($q, OrderCloudSDK, UploadService, toastr) {
             deferred.notify(progress);
             var groupAssignmentQueue = [];
             _.each(users, function(user) {
-                var assignedLocationIDs = user.xp.Locations;
-                _.each(assignedLocationIDs, function(id) {
+                var locations = user.xp.Locations[0].split(",");
+                _.each(locations, function(id) {
+                    id = id.trim();
                     var matchedID = _.findWhere(groups.UserGroups, {ID: id});
                     if(matchedID) {
                         var assignment = {
@@ -143,16 +159,20 @@ function UserUploadService($q, OrderCloudSDK, UploadService, toastr) {
                                     deferred.notify(progress);
                                 })
                                 .catch(function(ex) {
+                                    var e = _getErrorMessage(ex);
+                                    var displayError = {UserID: assignment.UserID, UserGroupID: assignment.UserGroupID, Error: e};
+
+                                    console.log(displayError);
+                                    results.FailedUserAssignments.push(displayError);
+
                                     progress[progress.length - 1].ErrorCount++;
                                     deferred.notify(progress);
-                                    toastr.error(ex.response.body.Errors[0].Message, 'Error');
-                                    results.FailedUserAssignments.push({UserID: assignment.UserID, UserGroupID: assignment.UserGroupID, Error: {Code: ex.data.Errors[0].ErrorCode, Message: ex.data.Errors[0].Message}});
                                 });
                             }());
                     } else {
                         progress[progress.length - 1].ErrorCount++;
                         deferred.notify(progress);
-                        results.FailedUserAssignments.push({UserID: user.ID, UserGroupID: matchedID.ID, Message: 'An error occurred while assigning this User to a matching User Group'});
+                        results.FailedUserAssignments.push({UserID: user.ID, UserGroupID: matchedID.ID, Error: 'An error occurred while assigning this User to a matching User Group'});
                     }
                 });
             });
@@ -175,7 +195,7 @@ function UserUploadService($q, OrderCloudSDK, UploadService, toastr) {
                     City: address.City,
                     State: address.State,
                     Zip: address.Zip,
-                    Country: address.Country,
+                    Country: 'US',
                     Phone: address.Phone,
                     AddressName: address.AddressName
                 };
@@ -186,10 +206,14 @@ function UserUploadService($q, OrderCloudSDK, UploadService, toastr) {
                             deferred.notify(progress);
                         })
                         .catch(function(ex) {
+                            var e = _getErrorMessage(ex);
+                            var displayError = {AddressID: addressBody.ID,  Error: e};
+
+                            console.log(displayError);
+                            results.FailedAddresses.push(displayError);
+
                             progress[progress.length - 1].ErrorCount++;
                             deferred.notify(progress);
-                            toastr.error(ex.response.body.Errors[0].Message, 'Error');
-                            results.FailedAddresses.push({AddressID: addressBody.ID, Error: {ErrorCode: ex.data.Errors[0].ErrorCode, Message: ex.data.Errors[0].Message}});
                         });
                 }());
             });
@@ -199,7 +223,7 @@ function UserUploadService($q, OrderCloudSDK, UploadService, toastr) {
                     successfulAddresses = addresses.Address;
                     addressCount = addresses.Address.length;
                     buildAddressAssignment(successfulUserGroups, successfulAddresses);
-                })
+                });
         }
 
         function buildAddressAssignment(groups, addresses) {
@@ -234,10 +258,14 @@ function UserUploadService($q, OrderCloudSDK, UploadService, toastr) {
                             deferred.notify(progress);
                         })
                         .catch(function(ex) {
+                            var e = _getErrorMessage(ex);
+                            var displayError = {AddressID: assignment.AddressID, UserGroupID: assignment.GroupID,  Error: e};
+
+                            console.log(displayError);
+                            results.FailedAddressAssignments.push(displayError);
+
                             progress[progress.length - 1].ErrorCount++;
                             deferred.notify(progress);
-                            toastr.error(ex.response.body.Errors[0].Message, 'Error');
-                            results.FailedCategoryAssignments.push({AddressID: assignment.AddressID, UserGroupID: assignment.GroupID, Error: {Code: ex.data.Errors[0].ErrorCode, Message: ex.data.Errors[0].Message}});
                         });
                 })());
             });
@@ -245,7 +273,7 @@ function UserUploadService($q, OrderCloudSDK, UploadService, toastr) {
                 progress.push({Message: 'Done'});
                 deferred.notify(progress);
                 finish();
-            })
+            });
         }
 
         function finish() {
@@ -283,18 +311,18 @@ function UserUploadService($q, OrderCloudSDK, UploadService, toastr) {
                 result.UserIssues.push({
                     ID: userData.ID,
                     Username: userData.Username,
-                    Issue: 'User: ' + userData.Username + ' does not have an ID'
+                    Issue: 'User: ' + userData.Username + ' does not have an ID, ensure column name "id" is populated'
                 });
             }
             if(!userData.Username) {
                 result.UserIssues.push({
                     ID: userData.ID,
                     Username: userData.Username,
-                    Issue: 'User ' + userData.ID + ' does not have a Username'
+                    Issue: 'User ' + userData.ID + ' does not have a Username, ensure column name "username" is populated'
                 });
             }
         }
-        return result
+        return result;
     }
 
     function _validateUserGroups(groups, mapping) {
@@ -317,7 +345,14 @@ function UserUploadService($q, OrderCloudSDK, UploadService, toastr) {
             if (!userGroupData.ID) {
                 result.UserGroupIssues.push({
                     ID: userGroupData.ID,
-                    Issue: 'User Group: ' + userGroupData.Name + ' does not have an ID'
+                    Issue: 'User Group:' + userGroupData.Name + ' does not have an ID, ensure column name "id" is populated'
+                });
+            }
+            
+            if(!userGroupData.Name) {
+                result.UserGroupIssues.push({
+                    ID: userGroupData.ID,
+                    Issue: 'User Group: ' + userGroupData.ID + ' does not have a Name, ensure column "name" is populated'
                 });
             }
         }
@@ -353,39 +388,55 @@ function UserUploadService($q, OrderCloudSDK, UploadService, toastr) {
                 result.AddressIssues.push({
                     CompanyName: addressData.CompanyName,
                     ID: addressData.ID,
-                    Issues: 'Address: ' + addressData.CompanyName + ' does not have a Street'
-                })
+                    Issues: 'Address: ' + addressData.CompanyName + ' does not have a Street1, ensure column name "store_location_id" is populated'
+                });
             }
             if(!addressData.City) {
                 result.AddressIssues.push({
                     CompanyName: addressData.CompanyName,
                     ID: addressData.ID,
-                    Issues: 'Address: ' + addressData.CompanyName + ' does not have a City'
-                })
+                    Issues: 'Address: ' + addressData.CompanyName + ' does not have a City, ensure column name "city" is populated'
+                });
             }
             if(!addressData.State) {
                 result.AddressIssues.push({
                     CompanyName: addressData.CompanyName,
                     ID: addressData.ID,
-                    Issues: 'Address: ' + addressData.CompanyName + ' does not have a State'
-                })
+                    Issues: 'Address: ' + addressData.CompanyName + ' does not have a State, ensure column name "state" is populated'
+                });
             }
             if(!addressData.Zip) {
                 result.AddressIssues.push({
                     CompanyName: addressData.Zip,
                     ID: addressData.ID,
-                    Issues: 'Address: ' + addressData.Zip + ' does not have a Zip Code'
-                })
+                    Issues: 'Address: ' + addressData.Zip + ' does not have a Zip Code, ensure column name "zip" is populated'
+                });
             }
-            if(!addressData.Country) {
-                result.AddressIssues.push({
-                    CompanyName: addressData.Zip,
-                    ID: addressData.ID,
-                    Issues: 'Address: ' + addressData.Zip + ' does not have a Country'
-                })
-            }
+            //hard coding this to 'US' for now 
+            // if(!addressData.Country) {
+            //     result.AddressIssues.push({
+            //         CompanyName: addressData.Zip,
+            //         ID: addressData.ID,
+            //         Issues: 'Address: ' + addressData.Zip + ' does not have a Country, ensure column name "country" is populated'
+            //     });
+            // }
         }
         return result;
+    }
+
+    function _getErrorMessage(ex){
+        var message = '';
+        if(ex && ex.response && ex.response.body && ex.response.body.Errors && ex.response.body.Errors.length) {
+            var errorObj = ex.response.body.Errors[0];
+            message = errorObj.ErrorCode === 'NotFound' ? errorObj.Data.ObjectType + ' ' + errorObj.Data.ObjectID + ' not found.' : errorObj.Message;
+        } else if(ex && ex.response && ex.response.body && ex.response.body['error_description']) {
+            message = ex.response.body['error_description'];
+        } else if(ex && ex.message) {
+            message = ex.message;
+        } else {
+            message = 'An error occurred';
+        }
+        return message;
     }
 
     return service;
