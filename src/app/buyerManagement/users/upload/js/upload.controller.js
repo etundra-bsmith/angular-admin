@@ -72,7 +72,7 @@ function UserUploadController($scope, SelectedBuyer, UploadService, UserUploadSe
             vm.userFileData.Event = event;
             vm.parsedData = null;
             if(vm.userFileData.Name && vm.userGroupFileData.Name && vm.addressFileData.Name) parsedData();
-        })
+        });
     }
 
     function userGroupFileSelected(event) {
@@ -81,7 +81,7 @@ function UserUploadController($scope, SelectedBuyer, UploadService, UserUploadSe
             vm.userGroupFileData.Event = event;
             vm.parsedData = null;
             if(vm.userFileData.Name && vm.userGroupFileData.Name && vm.addressFileData.Name) parsedData();
-        })
+        });
     }
 
     function addressFileSelected(event) {
@@ -129,7 +129,7 @@ function UserUploadController($scope, SelectedBuyer, UploadService, UserUploadSe
                 vm.parsedUserData.UserCount = vm.parsedUserData.length;
                 vm.parsedUserGroupData.UserGroupCount = vm.parsedUserGroupData.length;
                 vm.parsedAddressData.AddressCount = vm.parsedAddressData.length;
-            })
+            });
     }
 
     vm.upload = function() {
