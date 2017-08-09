@@ -143,8 +143,9 @@ function UserUploadService($q, OrderCloudSDK, UploadService, toastr, $exceptionH
             deferred.notify(progress);
             var groupAssignmentQueue = [];
             _.each(users, function(user) {
-                var assignedLocationIDs = user.xp.Locations;
-                _.each(assignedLocationIDs, function(id) {
+                var locations = user.xp.Locations[0].split(",");
+                _.each(locations, function(id) {
+                    id = id.trim();
                     var matchedID = _.findWhere(groups.UserGroups, {ID: id});
                     if(matchedID) {
                         var assignment = {
